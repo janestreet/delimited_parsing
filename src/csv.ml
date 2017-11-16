@@ -351,7 +351,7 @@ module Parse_state = struct
       && array.(next_field_index) = current_field
   ;;
 
-  let input t ?(pos = 0) ?len input =
+  let input_aux ~get_length ~get t ?(pos = 0) ?len input =
     let (field, current_row) = mutable_of_t t in
     let enqueue = ref (should_enqueue t.fields_used t.current_field t.next_field_index) in
     let current_field = ref t.current_field in
@@ -369,7 +369,7 @@ module Parse_state = struct
     let loop_bound =
       match len with
       | Some i -> i + pos
-      | None   -> String.length input
+      | None   -> get_length input
     in
     let rec loop i t step =
       if i >= loop_bound
@@ -377,7 +377,7 @@ module Parse_state = struct
       else
         let open Char.Replace_polymorphic_compare in
         let continue = loop (i + 1) in
-        let c = input.[i] in
+        let c = get input i in
         if c = '\r'
         then continue t step
         else
@@ -477,6 +477,9 @@ module Parse_state = struct
     ; next_field_index = !next_field_index
     }
   ;;
+
+  let input t ?pos ?len input = input_aux ~get_length:Bytes.length ~get:Bytes.get t ?pos ?len input
+  let input_string t ?pos ?len input = input_aux ~get_length:String.length ~get:String.get t ?pos ?len input
 
   let finish t =
     let (field, current_row) = mutable_of_t t in
@@ -718,7 +721,8 @@ module Header_parse : sig
 
   (** [input t ~len s] reads the first [len] bytes from [s] and returns either [t] or
       [header_map, unused_input]. *)
-  val input : t -> len : int -> string -> (t, int String.Map.t * string) Either.t
+  val input        : t -> len : int -> Bytes.t -> (t, int String.Map.t * string) Either.t
+  val input_string : t -> len : int -> string  -> (t, int String.Map.t * string) Either.t
 
   val is_at_beginning_of_row : t -> bool
 end = struct
@@ -781,10 +785,16 @@ end = struct
       First (create' ?strip ?sep ?quote f)
   ;;
 
+  let input_string t ~len input =
+    try First { t with state = Parse_state.input_string t.state ~len input; } with
+    | Header_parsed (row, offset) ->
+      Second (t.transform row, String.sub input ~pos:offset ~len:(len - offset))
+  ;;
+
   let input t ~len input =
     try First { t with state = Parse_state.input t.state ~len input; } with
     | Header_parsed (row, offset) ->
-      Second (t.transform row, String.sub input ~pos:offset ~len:(len - offset))
+      Second (t.transform row, Bytes.To_string.sub input ~pos:offset ~len:(len - offset))
   ;;
 
 end
@@ -840,7 +850,7 @@ let fold_reader' ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder 
     in
     let state =
       Option.fold trailing_input ~init:state ~f:(fun state input ->
-        Parse_state.input state input)
+        Parse_state.input_string state input)
     in
     let buffer = Bytes.create buffer_size in
     Deferred.repeat_until_finished (state, init) (fun (state, init) ->
@@ -891,7 +901,7 @@ let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_
     | Second header_map ->
       Some (header_map, csv_string)
     | First header_parse ->
-      match Header_parse.input header_parse ~len:(String.length csv_string) csv_string with
+      match Header_parse.input_string header_parse ~len:(String.length csv_string) csv_string with
       | First _ ->
         if String.is_empty csv_string
         then None
@@ -905,7 +915,7 @@ let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_
   | None ->
     init
   | Some (header_map, csv_string) ->
-    Parse_state.input
+    Parse_state.input_string
       (create_parse_state ?strip ?sep ?quote ?on_invalid_row ~header_map builder ~init ~f)
       csv_string
     |> Parse_state.finish
@@ -933,7 +943,7 @@ module Replace_delimited_csv = struct
         let parse_state =
           match input with
           | `Eof -> Parse_state.finish parse_state
-          | `Data s -> Parse_state.input parse_state s
+          | `Data s -> Parse_state.input_string parse_state s
         in
         let queue = Parse_state.acc parse_state in
         let result = Fast_queue.to_list queue in
@@ -957,7 +967,7 @@ module Replace_delimited_csv = struct
           | `Eof -> ""
           | `Data s -> s
         in
-        match Header_parse.input header_state ~len:(String.length input) input with
+        match Header_parse.input_string header_state ~len:(String.length input) input with
         | First header_state -> First header_state, []
         | Second (header_map, input) ->
           let state = create_parse_state ?strip ?sep ?quote header_map in
@@ -974,7 +984,8 @@ module Replace_delimited_csv = struct
           let state', results =
             match !state with
             | First  state -> manual_parse_header ?strip ?sep state input
-            | Second state -> manual_parse_data               state input
+            | Second state ->
+              manual_parse_data               state input
           in
           state := state';
           results

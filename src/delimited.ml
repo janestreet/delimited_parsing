@@ -356,7 +356,7 @@ let of_reader
       let res =
         Result.try_with (fun () ->
           for i = 0 to n - 1 do
-            let c = buffer.[i] in
+            let c = Bytes.get buffer i in
             if c = '\n' then begin
               prev_was_cr := false;
               if !quoted then begin
@@ -563,7 +563,7 @@ module Csv = struct
         >>| fun () ->
         close ()
       | Ok (`Ok n) ->
-        update (`Data (buffer, n))
+        update (`Data (Bytes.to_string buffer, n))
         >>= fun () ->
         loop ()
     in

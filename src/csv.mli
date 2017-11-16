@@ -184,7 +184,8 @@ module Parse_state : sig
 
   (** [input t ?pos ?len s] parses the first [len] characters of [s], starting at position
       [pos].  [pos] defaults to [0] and [len] defaults to reading up to the end of [s]. *)
-  val input : 'a t -> ?pos : int -> ?len : int -> string -> 'a t
+  val input        : 'a t -> ?pos : int -> ?len : int -> Bytes.t -> 'a t
+  val input_string : 'a t -> ?pos : int -> ?len : int -> string  -> 'a t
 
   (** [finish t] forces an end-of-row. Raises if end-of-row is not permitted here (e.g.,
       within a quoted field). It is permitted to [input] after a [finish]. *)
@@ -242,7 +243,8 @@ module Header_parse : sig
 
   (** [input t ~len s] reads the first [len] bytes from [s] and returns either [t] or
       [header_map, unused_input]. *)
-  val input : t -> len : int -> string -> (t, int String.Map.t * string) Either.t
+  val input        : t -> len : int -> Bytes.t -> (t, int String.Map.t * string) Either.t
+  val input_string : t -> len : int -> string  -> (t, int String.Map.t * string) Either.t
 
   val is_at_beginning_of_row : t -> bool
 end
