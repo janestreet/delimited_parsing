@@ -3,7 +3,7 @@ open! Async
 
 (** An applicative interface for parsing values from a csv file. *)
 
-module Header : Delimited_intf.Header
+module Header = Header
 
 (** This provides an applicative interface for constructing values from a csv file.
 
@@ -196,25 +196,9 @@ end
 
 module Builder : sig
   type nonrec 'a t = 'a t
-end
 
-module Replace_delimited_csv : sig
-
-  module Delimited_deprecated = Delimited
-
-  module Delimited : sig
-
-    module Row : sig
-      include Delimited_intf.Row
-
-      (** Exposed for our automated tests.  Legacy call sites won't use this. *)
-      val builder : t Builder.t
-    end
-
-    include Delimited_intf.S with module Row := Row
-
-  end
-
+  val lambda : (int String.Map.t -> string Fast_queue.t -> 'a) -> 'a t
+  val return : 'a -> 'a t
 end
 
 val create_parse_state
@@ -248,3 +232,17 @@ module Header_parse : sig
 
   val is_at_beginning_of_row : t -> bool
 end
+
+module Row : sig
+  include Row_intf.Row
+
+  val create_of_fq : int String.Map.t               -> string Fast_queue.t -> t
+  val upgrade      : ?header_map : int String.Map.t -> Row.t               -> t
+
+  val header_map   : t -> int String.Map.t
+
+  val builder : t Builder.t
+end
+
+(* row up to the error, and the field with the error up to the point of failure *)
+exception Bad_csv_formatting of string list * string

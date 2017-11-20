@@ -6,6 +6,9 @@ module Csv_writer = Core_extended.Csv_writer
 (* the maximum read/write I managed to get off of a socket or disk was 65k *)
 let buffer_size = 10 * 65 * 1024
 
+(* row up to the error, and the field with the error up to the point of failure *)
+exception Bad_csv_formatting of string list * string
+
 module Fast_queue = struct
   (* Fast_queue is faster than Core_queue because it doesn't support dequeue, traversal,
      or detection of mutation during traversal. *)
@@ -60,24 +63,9 @@ module Fast_queue = struct
   let length t = t.length
 end
 
-module Header = struct
-  type t = [
-    | `Yes
-    | `No
-    | `Limit of string list
-    | `Replace of string list
-    | `Transform of (string list -> string list) sexp_opaque
-    | `Add of string list
-  ] [@@deriving sexp_of]
-end
+module Header = Header
 
-module Row' : sig
-  include Delimited_intf.Row
-
-  val create_of_fq : int String.Map.t -> string Fast_queue.t -> t
-  val upgrade : ?header_map : int String.Map.t -> Delimited.Row.t -> t
-  val header_map : t -> int String.Map.t
-end = struct
+module Row0 = struct
   type t = { header_map : int String.Map.t
            ; fields : string array
            } [@@deriving compare, fields]
@@ -87,12 +75,12 @@ end = struct
       match header_map with
       | Some header_map -> header_map
       | None ->
-        Delimited.Row.headers delimited_row
+        Row.headers delimited_row
         |> Hashtbl.fold ~init:String.Map.empty ~f:(fun ~key ~data init ->
           Map.add init ~key ~data)
     in
     { header_map
-    ; fields = Delimited.Row.to_array delimited_row
+    ; fields = Row.to_array delimited_row
     }
   ;;
 
@@ -187,11 +175,11 @@ end = struct
     | _ -> None
   ;;
 
-  let create header_table row_queue =
+  let create header_table fields =
     { header_map =
         Hashtbl.fold header_table ~init:String.Map.empty ~f:(fun ~key ~data init ->
           Map.add init ~key ~data)
-    ; fields = Queue.to_array row_queue
+    ; fields
     }
 
   let create_of_fq header_map row_queue =
@@ -210,8 +198,6 @@ end = struct
   ;;
 
   let iter t ~f = fold t ~init:() ~f:(fun () ~header ~data -> f ~header ~data)
-
-  let size t = fold t ~init:0 ~f:(fun acc ~header:_ ~data -> acc + String.length data)
 
   let headers t = String.Table.of_alist_exn (Map.to_alist t.header_map)
 end
@@ -497,9 +483,7 @@ module Parse_state = struct
         if enqueue then t.emit_field current_row field;
         emit_row t.f 0 t.acc current_row
       | In_quoted_field ->
-        raise (Delimited.Csv.Bad_csv_formatting
-                 (Fast_queue.to_list current_row,
-                  Buffer.contents field))
+        raise (Bad_csv_formatting (Fast_queue.to_list current_row, Buffer.contents field))
     in
     { t with
       field = Buffer.contents field
@@ -924,130 +908,8 @@ let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_
 
 include Builder
 
-module Replace_delimited_csv = struct
+module Row = struct
+  include Row0
 
-  module Delimited_deprecated = Delimited
-
-  module Delimited = struct
-
-    module Header = Header
-    module Row = struct
-      include Row'
-      let builder = Builder.lambda create_of_fq
-    end
-
-    module Csv = struct
-      exception Bad_csv_formatting = Delimited.Csv.Bad_csv_formatting
-
-      let manual_parse_data parse_state input =
-        let parse_state =
-          match input with
-          | `Eof -> Parse_state.finish parse_state
-          | `Data s -> Parse_state.input_string parse_state s
-        in
-        let queue = Parse_state.acc parse_state in
-        let result = Fast_queue.to_list queue in
-        Fast_queue.clear queue;
-        Second parse_state, result
-      ;;
-
-      let create_parse_state ?strip ?sep ?quote header_map =
-        Parse_state.create ?strip ?sep ?quote
-          ~fields_used:None
-          ~init:(Fast_queue.create ())
-          ~f:(fun _ queue row ->
-            Fast_queue.enqueue queue (Row.create_of_fq header_map row);
-            queue)
-          ()
-      ;;
-
-      let manual_parse_header ?strip ?sep ?quote header_state input =
-        let input =
-          match input with
-          | `Eof -> ""
-          | `Data s -> s
-        in
-        match Header_parse.input_string header_state ~len:(String.length input) input with
-        | First header_state -> First header_state, []
-        | Second (header_map, input) ->
-          let state = create_parse_state ?strip ?sep ?quote header_map in
-          manual_parse_data state (`Data input)
-      ;;
-
-      let create_manual ?strip ?sep ~header () =
-        let state =
-          Header_parse.create ?strip ?sep ~header (Builder.return ())
-          |> Either.Second.map ~f:(create_parse_state ?strip ?sep)
-          |> ref
-        in
-        let parse_chunk input =
-          let state', results =
-            match !state with
-            | First  state -> manual_parse_header ?strip ?sep state input
-            | Second state ->
-              manual_parse_data               state input
-          in
-          state := state';
-          results
-        in
-        stage parse_chunk
-      ;;
-
-      let of_reader ?strip ?skip_lines ?sep ~header reader =
-        fold_reader_to_pipe ?strip ?skip_lines ?sep ~header Row.builder reader
-      ;;
-
-      let create_reader ?strip ?skip_lines ?sep ~header filename =
-        Reader.open_file filename
-        >>| of_reader ?strip ?skip_lines ?sep ~header
-      ;;
-
-      let parse_string ?strip ?sep ~header csv_string =
-        fold_string ?strip ?sep ~header
-          Row.builder
-          csv_string
-          ~init:(Fast_queue.create ())
-          ~f:(fun queue row -> Fast_queue.enqueue queue row; queue)
-        |> Fast_queue.to_list
-      ;;
-
-      let of_writer = Delimited.Csv.of_writer
-      let create_writer = Delimited.Csv.create_writer
-
-    end
-
-    type ('a,'b) reader = ('a, 'b) Delimited.reader
-
-    let upgrade_delimited_row_pipe r =
-      Pipe.folding_map r ~init:None ~f:(fun header_map row ->
-        let row = Row.upgrade ?header_map row in
-        (Some (Row.header_map row), row))
-    ;;
-
-    module Positional = struct
-      include Delimited.Positional
-
-      let of_reader ?strip ?skip_lines ?on_parse_error ~header ?strict r =
-        Delimited.Positional.of_reader ?strip ?skip_lines ?on_parse_error ~header ?strict r
-        |> Or_error.map ~f:upgrade_delimited_row_pipe
-      ;;
-
-      let create_reader ?strip ?skip_lines ?on_parse_error ~header ?strict filename =
-        Delimited.Positional.create_reader ?strip ?skip_lines ?on_parse_error ~header
-          ?strict filename
-        >>| Or_error.map ~f:upgrade_delimited_row_pipe
-      ;;
-    end
-
-    let of_reader ?strip ?skip_lines ?on_parse_error ~header ?quote ~sep r =
-      Delimited.of_reader ?strip ?skip_lines ?on_parse_error ~header ?quote ~sep r
-      |> upgrade_delimited_row_pipe
-    ;;
-
-    let create_reader ?strip ?skip_lines ?on_parse_error ~header ?quote ~sep filename =
-      Delimited.create_reader ?strip ?skip_lines ?on_parse_error ~header ?quote ~sep
-        filename
-      >>| upgrade_delimited_row_pipe
-    ;;
-  end
+  let builder = Builder.lambda create_of_fq
 end
