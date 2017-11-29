@@ -142,5 +142,6 @@ let create header_index data = { header_index; data }
 
 let to_list t  = Array.to_list t.data
 let to_array t = t.data
+let length t   = Array.length t.data
 
 let headers t : int String.Table.t = t.header_index

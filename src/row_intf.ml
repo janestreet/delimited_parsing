@@ -43,6 +43,9 @@ module type Row = sig
   (* [to_array t] return all columns in the order they appear in the file *)
   val to_array : t -> string array
 
+  (* [length t] returns number of fields in this row *)
+  val length : t -> int
+
   (* [headers t] return the header mapping (header -> position) available for the table
      this row is from.
   *)

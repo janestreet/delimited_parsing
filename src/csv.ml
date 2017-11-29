@@ -189,6 +189,7 @@ module Row0 = struct
 
   let to_list t  = Array.to_list t.fields
   let to_array t = t.fields
+  let length t   = Array.length t.fields
 
   let equal t1 t2 = 0 = ([%compare: t] t1 t2)
 
