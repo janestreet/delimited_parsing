@@ -77,7 +77,7 @@ module Row0 = struct
       | None ->
         Row.headers delimited_row
         |> Hashtbl.fold ~init:String.Map.empty ~f:(fun ~key ~data init ->
-          Map.add init ~key ~data)
+          Map.set init ~key ~data)
     in
     { header_map
     ; fields = Row.to_array delimited_row
@@ -90,7 +90,7 @@ module Row0 = struct
     let names_by_indices =
       Map.to_sequence t.header_map
       |> Sequence.fold ~init:Int.Map.empty ~f:(fun init (name, index) ->
-        Map.add init ~key:index ~data:name)
+        Map.set init ~key:index ~data:name)
     in
     Array.mapi t.fields ~f:(fun i v ->
       let k =
@@ -178,7 +178,7 @@ module Row0 = struct
   let create header_table fields =
     { header_map =
         Hashtbl.fold header_table ~init:String.Map.empty ~f:(fun ~key ~data init ->
-          Map.add init ~key ~data)
+          Map.set init ~key ~data)
     ; fields
     }
 
@@ -725,7 +725,7 @@ end = struct
 
   let header_map header_row =
     Array.foldi header_row ~init:String.Map.empty ~f:(fun i map header ->
-      Map.add map ~key:header ~data:i)
+      Map.set map ~key:header ~data:i)
   ;;
 
   let limit_header builder limit_headers' csv_headers' =
