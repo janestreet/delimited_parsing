@@ -768,6 +768,15 @@ end = struct
     | `Transform f     ->
       let f headers = header_map (Array.of_list (f (Array.to_list headers))) in
       First (create' ?strip ?sep ?quote f)
+    | `Filter_map f     ->
+      let f headers =
+        f (Array.to_list headers)
+        |> List.foldi ~init:String.Map.empty ~f:(fun i map ->
+          function
+          | None -> map
+          | Some header -> Map.set map ~key:header ~data:i)
+      in
+      First (create' ?strip ?sep ?quote f)
   ;;
 
   let input_string t ~len input =

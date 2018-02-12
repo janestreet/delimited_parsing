@@ -16,4 +16,5 @@ type t = [
   (* the supplied transform function will be passed the headers as they are in the file
      and should return the headers it would like to use. *)
   | `Transform of (string list -> string list) sexp_opaque
+  | `Filter_map of (string list -> string option list) sexp_opaque
 ] [@@deriving sexp_of]
