@@ -37,6 +37,9 @@ module type Row = sig
      least i - 1 columns *)
   val nth : t -> int -> string option
 
+  (* [nth_conv] is like [nth_conv_exn], but returns [None] if there is an error.  *)
+  val nth_conv : t -> int -> (string -> 'a) -> 'a option
+
   (* [to_list t] return all columns in the order they appear in the file *)
   val to_list : t -> string list
 

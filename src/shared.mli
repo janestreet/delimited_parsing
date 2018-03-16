@@ -16,7 +16,7 @@ open! Async
 type ('a,'b) reader =
   ?strip:bool
   -> ?skip_lines:int
-  -> ?on_parse_error:[`Raise
+  -> ?on_parse_error:[ `Raise
                      | `Handle of (string Queue.t -> exn -> [`Continue | `Finish])]
   -> header:'a
   -> 'b

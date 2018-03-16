@@ -175,6 +175,11 @@ module Row0 = struct
     | _ -> None
   ;;
 
+  let nth_conv t i conv =
+    try Some (conv (nth_exn t i)) with
+    | _ -> None
+  ;;
+
   let create header_table fields =
     { header_map =
         Hashtbl.fold header_table ~init:String.Map.empty ~f:(fun ~key ~data init ->
@@ -556,7 +561,8 @@ module Builder = struct
       List.fold_right ts ~init:(return []) ~f:(map2 ~f:(fun x xs -> x :: xs))
     ;;
 
-    let all_ignore ts = map ~f:ignore (all ts)
+    let all_unit ts = map ~f:ignore (all ts)
+    let all_ignore  = all_unit
 
     let both x y = Both (x, y)
 
@@ -664,7 +670,7 @@ module Builder = struct
         let column_index =
           match String.Map.find_exn header_map h with
           | index -> index
-          | exception Not_found ->
+          | exception (Not_found_s _ | Caml.Not_found) ->
             raise_s [%message "Header not found"
                                 (h : string)
                                 (header_map : int String.Map.t)]
@@ -723,10 +729,14 @@ end = struct
 
   let is_at_beginning_of_row t = Parse_state.is_at_beginning_of_row t.state
 
-  let header_map header_row =
+  let header_map_opt header_row =
     Array.foldi header_row ~init:String.Map.empty ~f:(fun i map header ->
-      Map.set map ~key:header ~data:i)
+      match header with
+      | None -> map
+      | Some header -> Map.set map ~key:header ~data:i)
   ;;
+
+  let header_map header_row = header_map_opt (Array.map ~f:Option.some header_row)
 
   let limit_header builder limit_headers' csv_headers' =
     let limit_headers = String.Set.of_list limit_headers' in
@@ -767,6 +777,11 @@ end = struct
       First  (create' ?strip ?sep ?quote f)
     | `Transform f     ->
       let f headers = header_map (Array.of_list (f (Array.to_list headers))) in
+      First (create' ?strip ?sep ?quote f)
+    | `Filter_map f    ->
+      let f headers =
+        header_map_opt (Array.of_list (f (Array.to_list headers)))
+      in
       First (create' ?strip ?sep ?quote f)
   ;;
 

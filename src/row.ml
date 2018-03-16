@@ -138,6 +138,13 @@ let nth t i =
   | _ -> None
 ;;
 
+let nth_conv t i conv =
+  try
+    Some (conv (nth_exn t i))
+  with
+  | _ -> None
+;;
+
 let create header_index data = { header_index; data }
 
 let to_list t  = Array.to_list t.data

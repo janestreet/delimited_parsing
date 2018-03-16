@@ -57,24 +57,25 @@ let make_emit_field ~strip current_row field =
 
 let set_headers header_index headers =
   List.iteri headers ~f:(fun i h ->
-    match Hashtbl.find header_index h with
-    | None -> Hashtbl.set header_index ~key:h ~data:i
-    | Some other_i ->
-      failwithf "header %s duplicated at position %i and %i" h other_i i ())
+    Option.iter h ~f:(fun h ->
+      match Hashtbl.find header_index h with
+      | None -> Hashtbl.set header_index ~key:h ~data:i
+      | Some other_i ->
+        failwithf "header %s duplicated at position %i and %i" h other_i i ()))
 ;;
 
 let make_emit_row current_row row_queue header ~lineno =
   let module Table = String.Table in
   let header_index =
     match (header : Header.t) with
-    | `No | `Yes | `Limit _ | `Transform _ -> Table.create () ~size:1
+    | `No | `Yes | `Limit _ | `Transform _ | `Filter_map _ -> Table.create () ~size:1
     | `Replace headers | `Add headers ->
       Table.of_alist_exn (List.mapi headers ~f:(fun i s -> (s,i)))
   in
   let header_processed =
     ref (match header with
       | `No | `Add _ -> true
-      | `Limit _ | `Replace _ | `Transform _ | `Yes -> false)
+      | `Limit _ | `Replace _ | `Transform _ |`Filter_map _ | `Yes -> false)
   in
   (`on_eof (fun () ->
      if not !header_processed
@@ -96,8 +97,18 @@ let make_emit_row current_row row_queue header ~lineno =
              Hashtbl.set header_index ~key:must_exist ~data:i)
        | `Replace _new_headers -> ()  (* already set above *)
        | `Transform f ->
-         set_headers header_index (f (Queue.to_list current_row))
-       | `Yes -> set_headers header_index (Queue.to_list current_row)
+         Queue.to_list current_row
+         |> f
+         |> List.map ~f:Option.some
+         |> set_headers header_index
+       | `Filter_map f ->
+         Queue.to_list current_row
+         |> f
+         |> set_headers header_index
+       | `Yes ->
+         Queue.to_list current_row
+         |> List.map ~f:Option.some
+         |> set_headers header_index
      end else begin
        Queue.enqueue row_queue (Row.create header_index (Queue.to_array current_row))
      end;
