@@ -1,7 +1,6 @@
 (library (
   (name delimited_parsing)
   (public_name delimited_parsing)
-  (flags (:standard -safe-string))
   (libraries (
     async
     core
