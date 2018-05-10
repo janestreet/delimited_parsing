@@ -181,16 +181,16 @@ let create_reader ?strip ?skip_lines ?sep ~header filename =
   of_reader ?strip ?skip_lines ~header ?sep r
 ;;
 
-let write_field w field = Writer.write w (Csv_writer.maybe_escape_field field)
+let write_field ~sep w field = Writer.write w (Csv_writer.maybe_escape_field ~sep field)
 
 let rec write_line ~sep ~line_break w line =
   match line with
   | [] -> Writer.write w line_break
   | [field] ->
-    write_field w field;
+    write_field ~sep w field;
     write_line ~sep ~line_break w []
   | field :: rest ->
-    write_field w field;
+    write_field ~sep w field;
     Writer.write_char w sep;
     write_line ~sep ~line_break w rest
 ;;
@@ -237,4 +237,11 @@ let%expect_test "required header is also required for empty files" =
   Expect_test_helpers.show_raise (fun () ->
     parse_string ~sep:'|' ~header:(`Limit ["foo"]) "");
   [%expect {| (raised (Failure "Header line was not found")) |}]
+;;
+
+let%expect_test "csv writer escapes output" =
+  let writer = of_writer ~sep:'|' (force Writer.stdout) in
+  Pipe.write writer ["fo,o"; "B|aR"; "baz\\|"]
+  >>= fun () ->
+  [%expect "fo,o|\"B|aR\"|\"baz\\|\"\r"]
 ;;
