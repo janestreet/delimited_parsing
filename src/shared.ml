@@ -44,7 +44,7 @@ let strip_buffer buf =
   | Some s ->
     match last_non_space (len - 1) with
     | None   -> assert false
-    | Some e -> Buffer.sub buf s (e - s + 1)
+    | Some e -> Buffer.To_string.sub buf ~pos:s ~len:(e - s + 1)
 ;;
 
 let make_emit_field ~strip current_row field =
