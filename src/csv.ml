@@ -545,6 +545,9 @@ module Builder = struct
       | _ -> Map (f, x)
     ;;
 
+    let ( >>| ) t f = map t ~f
+    ;;
+
     let map2 x y ~f =
       match (x, y) with
       | (Return x, Return y) -> Return (f x y)
@@ -574,6 +577,7 @@ module Builder = struct
       let ( <*> ) = ( <*> )
       let (  *> ) = (  *> )
       let ( <*  ) = ( <*  )
+      let ( >>| ) = ( >>| )
     end
   end
   include T

@@ -68,6 +68,7 @@ module Delimited = struct
     ;;
 
     let create_reader ?strip ?skip_lines ?sep ~header filename =
+      let open Deferred.Let_syntax in
       Reader.open_file filename
       >>| of_reader ?strip ?skip_lines ?sep ~header
     ;;
