@@ -36,3 +36,7 @@ module Row                                      = Row
 module Deprecated                               = Deprecated
 module Deprecated_intf                          = Deprecated_intf
 module Deprecated_csv                           = Deprecated_csv
+
+(** {1} For writing out values into delimited data. *)
+
+module Builder                                  = Builder

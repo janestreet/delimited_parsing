@@ -9,7 +9,7 @@ module Header = Header
 
     An ['a t] describes how to build an OCaml model ['a] for each row.
 
-    See lib/async_extended/example/csv_example.ml for an example of usage.
+    See lib/delimited_parsing/example/csv_example.ml for an example of usage.
 *)
 type 'a t
 
