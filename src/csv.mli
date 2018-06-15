@@ -1,9 +1,11 @@
 open! Core
 open! Async
 
-(** An applicative interface for parsing values from a csv file. *)
+(* row up to the error, and the field with the error up to the point of failure *)
 
-module Header = Header
+exception Bad_csv_formatting of string list * string
+
+(** An applicative interface for parsing values from a csv file. *)
 
 (** This provides an applicative interface for constructing values from a csv file.
 
@@ -18,14 +20,17 @@ include Applicative.S with type 'a t := 'a t
 module Let_syntax : sig
   module Let_syntax : sig
     include Applicative.S with type 'a t := 'a t
+
     module Open_on_rhs : sig
       val at_index : int -> f:(string -> 'a) -> 'a t
+
       val at_header : string -> f:(string -> 'a) -> 'a t
     end
   end
 end
 
 val at_index : int -> f:(string -> 'a) -> 'a t
+
 val at_header : string -> f:(string -> 'a) -> 'a t
 
 (** ['a on_invalid_row] specifies how to handle a row whose extents are known but whose
@@ -35,7 +40,7 @@ val at_header : string -> f:(string -> 'a) -> 'a t
 *)
 type 'a on_invalid_row
 
-(** [of_reader ?strip ?skip_lines ?sep ?quote ~init ~f r] produces a value by folding
+(** [fold_reader ?strip ?skip_lines ?sep ?quote ~init ~f r] produces a value by folding
     over a csv document read from [r].
 
     If [strip] is true, leading and trailing whitespace is stripped from each field.
@@ -50,16 +55,17 @@ type 'a on_invalid_row
     [sep] is the character that separates fields within a row.
     Default value is ','
 
-    [quote] defines a character to use for quoting. The default is [ `Using '"' ] which
+    [quote] defines a character to use for quoting. [ `Using '"' ]
     implements the MS Excel convention: either a field is unquoted, or it has leading and
     trailing quotes and internal escaped characters are represented as quote-char char,
     e.g., {|"a|} for [a].  [ `No_quoting ] means all characters are literal.
- *)
-val fold_reader :
-  ?strip:bool
+    The default is [ `Using '"' ].
+*)
+val fold_reader
+  :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[ `No_quoting | `Using of char]
+  -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
   -> ?on_invalid_row:'a on_invalid_row
   -> 'a t
@@ -72,11 +78,11 @@ val fold_reader :
     [of_reader], except for the [f] argument. [of_reader'] runs [f] on batches
     of [Row.t]s rather than running [f] on each individual row.
 *)
-val fold_reader' :
-  ?strip:bool
+val fold_reader'
+  :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[ `No_quoting | `Using of char]
+  -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
   -> ?on_invalid_row:'a on_invalid_row
   -> 'a t
@@ -85,11 +91,11 @@ val fold_reader' :
   -> Reader.t
   -> 'b Deferred.t
 
-val fold_reader_without_pushback :
-  ?strip:bool
+val fold_reader_without_pushback
+  :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[ `No_quoting | `Using of char]
+  -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
   -> ?on_invalid_row:'a on_invalid_row
   -> 'a t
@@ -98,21 +104,22 @@ val fold_reader_without_pushback :
   -> Reader.t
   -> 'b Deferred.t
 
-val fold_reader_to_pipe :
-  ?strip:bool
+val fold_reader_to_pipe
+  :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[ `No_quoting | `Using of char]
+  -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
   -> ?on_invalid_row:'a on_invalid_row
   -> 'a t
   -> Reader.t
   -> 'a Pipe.Reader.t
 
-val fold_string :
-  ?strip:bool
+
+val fold_string
+  :  ?strip:bool
   -> ?sep:char
-  -> ?quote:[ `No_quoting | `Using of char]
+  -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
   -> ?on_invalid_row:'a on_invalid_row
   -> 'a t
@@ -126,33 +133,41 @@ val fold_string :
 module Fast_queue : sig
   type 'a t
 
-  val create   : ?capacity : int -> unit -> 'a t
-  val of_list  : 'a list -> 'a t
-  val enqueue  : 'a t -> 'a -> unit
-  val nth_exn  : 'a t -> int -> 'a
-  val clear    : 'a t    -> unit
-  val to_list  : 'a t    -> 'a list
-  val to_array : 'a t    -> 'a array
-  val length   : 'a t    -> int
+  val create : ?capacity:int -> unit -> 'a t
+
+  val of_list : 'a list -> 'a t
+
+  val enqueue : 'a t -> 'a -> unit
+
+  val nth_exn : 'a t -> int -> 'a
+
+  val clear : 'a t -> unit
+
+  val to_list : 'a t -> 'a list
+
+  val to_array : 'a t -> 'a array
+
+  val length : 'a t -> int
 end
 
 module On_invalid_row : sig
   type 'a t = 'a on_invalid_row
 
-  val raise : _ t  (** The default. *)
+  val raise : _ t
+
+  (* The default. *)
+
   val skip : _ t
 
   val create
-    :  (int String.Map.t       (** Map from header to position. *)
+    :  (int String.Map.t (** Map from header to position. *)
         -> string Fast_queue.t (** Value at each position. *)
-        -> exn                 (** Exception raised when trying to convert this row. *)
-        -> [ `Skip | `Yield of 'a | `Raise of exn ])
+        -> exn (** Exception raised when trying to convert this row. *)
+        -> [`Skip | `Yield of 'a | `Raise of exn])
     -> 'a t
-
 end
 
 module Parse_state : sig
-
   (** At the lowest level, we model csv parsing as a fold over string arrays, one array
       per row. It is up to you to interpret the header row. *)
 
@@ -165,27 +180,28 @@ module Parse_state : sig
   val set_acc : 'a t -> 'a -> 'a t
 
   val create
-    :  ?strip : bool
-    -> ?sep : char
-    -> ?quote:[ `No_quoting | `Using of char]
+    :  ?strip:bool
+    -> ?sep:char
+    -> ?quote:[`No_quoting | `Using of char]
     (** Indices of the fields used. E.g., [~fields_used:(Some [| 0; 3; |])] means every
         row will be presented to [f] as having two fields, the first and fourth fields of
         the csv. This is for performance; pass [None] to store all fields.*)
-    -> fields_used : int array option
-    -> init : 'a
+    -> fields_used:int array option
+    -> init:'a
     (** [f i init row] should take the previous accumulator [init] and the next complete
         row [row], and return the next accumulator.
 
         The index [i] is the zero-indexed position of the next unconsumed byte relative to
         the start of this chunk of input. *)
-    -> f : (int -> 'a -> string Fast_queue.t -> 'a)
+    -> f:(int -> 'a -> string Fast_queue.t -> 'a)
     -> unit
     -> 'a t
 
   (** [input t ?pos ?len s] parses the first [len] characters of [s], starting at position
       [pos].  [pos] defaults to [0] and [len] defaults to reading up to the end of [s]. *)
-  val input        : 'a t -> ?pos : int -> ?len : int -> Bytes.t -> 'a t
-  val input_string : 'a t -> ?pos : int -> ?len : int -> string  -> 'a t
+  val input : 'a t -> ?pos:int -> ?len:int -> Bytes.t -> 'a t
+
+  val input_string : 'a t -> ?pos:int -> ?len:int -> string -> 'a t
 
   (** [finish t] forces an end-of-row. Raises if end-of-row is not permitted here (e.g.,
       within a quoted field). It is permitted to [input] after a [finish]. *)
@@ -198,13 +214,14 @@ module Builder : sig
   type nonrec 'a t = 'a t
 
   val lambda : (int String.Map.t -> string Fast_queue.t -> 'a) -> 'a t
+
   val return : 'a -> 'a t
 end
 
 val create_parse_state
-  :  ?strip : bool
-  -> ?sep : char
-  -> ?quote:[ `No_quoting | `Using of char]
+  :  ?strip:bool
+  -> ?sep:char
+  -> ?quote:[`No_quoting | `Using of char]
   -> ?on_invalid_row:'a on_invalid_row
   -> header_map:int String.Map.t
   -> 'a t
@@ -218,31 +235,76 @@ module Header_parse : sig
   type t
 
   val create
-    :  ?strip : bool
-    -> ?sep : char
-    -> ?quote : [ `No_quoting | `Using of char ]
-    -> ?header : Header.t
+    :  ?strip:bool
+    -> ?sep:char
+    -> ?quote:[`No_quoting | `Using of char]
+    -> ?header:Header.t
     -> _ Builder.t
     -> (t, int String.Map.t) Either.t
 
   (** [input t ~len s] reads the first [len] bytes from [s] and returns either [t] or
       [header_map, unused_input]. *)
-  val input        : t -> len : int -> Bytes.t -> (t, int String.Map.t * string) Either.t
-  val input_string : t -> len : int -> string  -> (t, int String.Map.t * string) Either.t
+  val input : t -> len:int -> Bytes.t -> (t, int String.Map.t * string) Either.t
+
+  val input_string : t -> len:int -> string -> (t, int String.Map.t * string) Either.t
 
   val is_at_beginning_of_row : t -> bool
 end
 
 module Row : sig
-  include Row_intf.Row
+  include module type of Row
 
-  val create_of_fq : int String.Map.t               -> string Fast_queue.t -> t
-  val upgrade      : ?header_map : int String.Map.t -> Row.t               -> t
-
-  val header_map   : t -> int String.Map.t
+  val create_of_fq : int String.Map.t -> string Fast_queue.t -> t
 
   val builder : t Builder.t
 end
 
-(* row up to the error, and the field with the error up to the point of failure *)
-exception Bad_csv_formatting of string list * string
+(** Non-applicative non-folding interface. All readers defined below will raise if they encounter unparsable content. *)
+
+(** [create_manual ?strip ~header r] returns a function that allows you to
+    feed strings into it, receiving back the rows as they are finished.
+
+    It is explicitly allowed to pass Eof, then more data.  This is useful
+    when tailing a file or when joining multiple files together.
+*)
+val create_manual
+  :  ?strip:bool
+  -> ?sep:char
+  -> header:Header.t
+  -> unit
+  -> ([`Data of string | `Eof] -> Row.t list) Staged.t
+
+(** [of_reader ?strip ~header r] returns a row pipe based on data read from
+    the provided reader.
+*)
+val of_reader
+  :  ?strip:bool
+  -> ?skip_lines:int
+  -> ?sep:char
+  -> header:Header.t
+  -> Reader.t
+  -> Row.t Pipe.Reader.t
+
+(** [create_reader ?strip ~header filename] same as of_reader, but creates the reader
+    for you *)
+val create_reader
+  :  ?strip:bool
+  -> ?skip_lines:int
+  -> ?sep:char
+  -> header:Header.t
+  -> string
+  -> Row.t Pipe.Reader.t Deferred.t
+
+val of_writer
+  :  ?sep:char
+  -> ?line_breaks:[`Unix | `Windows] (** default is [`Windows] *)
+  -> Writer.t
+  -> string list Pipe.Writer.t
+
+val create_writer
+  :  ?sep:char
+  -> ?line_breaks:[`Unix | `Windows] (** default is [`Windows] *)
+  -> string
+  -> string list Pipe.Writer.t Deferred.t
+
+val parse_string : ?strip:bool -> ?sep:char -> header:Header.t -> string -> Row.t list

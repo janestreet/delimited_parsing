@@ -8,13 +8,15 @@ type -'a t
 val column : ('a -> string) -> header:string -> 'a t
 
 val of_list : 'a t list -> 'a t
-val append  : 'a t -> 'a t -> 'a t
+
+val append : 'a t -> 'a t -> 'a t
 
 val contra_map : 'b t -> f:('a -> 'b) -> 'a t
 
 val map_headers : 'a t -> f:(string -> string) -> 'a t
 
 val headers : 'a t -> string list
+
 val to_columns : 'a t -> 'a -> string list
 
 (** Open for prefix operators useful for using with Fields.to_list.
@@ -32,16 +34,17 @@ val to_columns : 'a t -> 'a -> string list
 *)
 module Fields_O : sig
   (** Create a single column from a field of a record. *)
-  val (!!) : ('a -> string) -> ('b, 'a) Field.t -> 'b t
+  val ( !! ) : ('a -> string) -> ('b, 'a) Field.t -> 'b t
 
   (** Nest a builder in a field of a record.
 
       Column headers will be prefixed with the name of the field.
   *)
-  val (!>) : 'a t -> ('b, 'a) Field.t -> 'b t
+  val ( !> ) : 'a t -> ('b, 'a) Field.t -> 'b t
 end
 
 module O : sig
-  val (<<|) : 'b t -> ('a -> 'b) -> 'a t
-  val (<>) : 'a t -> 'a t -> 'a t
+  val ( <<| ) : 'b t -> ('a -> 'b) -> 'a t
+
+  val ( <> ) : 'a t -> 'a t -> 'a t
 end
