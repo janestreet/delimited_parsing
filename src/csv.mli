@@ -11,7 +11,7 @@ exception Bad_csv_formatting of string list * string
 
     An ['a t] describes how to build an OCaml model ['a] for each row.
 
-    See lib/delimited_parsing/example/csv_example.ml for an example of usage.
+    See ../example/csv_example.ml for an example of usage.
 *)
 type 'a t
 
