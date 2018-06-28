@@ -67,11 +67,13 @@ val length : t -> int
 
 (* [headers t] return the header mapping (header -> position) available for the table
    this row is from.
+
+   [list_of_headers] is a list in the same order as in input file.
 *)
 
-val headers : t -> int String.Table.t
+val headers : t -> int String.Map.t
 
-val headers' : t -> int String.Map.t
+val list_of_headers : t -> string list
 
 (* [is_empty t] return true if the row contains only empty strings *)
 

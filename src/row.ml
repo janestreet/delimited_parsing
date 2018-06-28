@@ -121,6 +121,10 @@ let fold t ~init ~f =
 
 let iter t ~f = fold t ~init:() ~f:(fun () ~header ~data -> f ~header ~data)
 
-let headers t = String.Table.of_alist_exn (Map.to_alist t.header_map)
+let headers t = t.header_map
 
-let headers' t = t.header_map
+let list_of_headers t =
+  Map.to_alist t.header_map
+  |> List.sort ~compare:(fun a b -> Int.compare (snd a) (snd b))
+  |> List.map ~f:fst
+;;
