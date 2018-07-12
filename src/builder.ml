@@ -41,7 +41,8 @@ module Fields_O = struct
   ;;
 
   let ( !> ) inner field =
-    map_headers inner
+    map_headers
+      inner
       ~f:
         (let prefix = Field.name field ^ "_" in
          fun name -> prefix ^ name)

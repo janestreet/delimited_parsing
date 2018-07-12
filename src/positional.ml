@@ -13,10 +13,10 @@ let process_header header ~strict =
   let rec loop i l =
     match l with
     | [] -> Ok (header, header_index)
-    | [ (name, _, _) ] -> (
-        match Hashtbl.add header_index ~key:name ~data:i with
-        | `Ok -> Ok (header, header_index)
-        | `Duplicate -> Or_error.error_string ("Duplicate column name: " ^ name) )
+    | [ (name, _, _) ] ->
+      (match Hashtbl.add header_index ~key:name ~data:i with
+       | `Ok -> Ok (header, header_index)
+       | `Duplicate -> Or_error.error_string ("Duplicate column name: " ^ name))
     | (name1, pos1, len1) :: (name2, pos2, len2) :: l ->
       if pos1 + len1 > pos2
       then
@@ -30,16 +30,22 @@ let process_header header ~strict =
           ("Gap between columns :"
            ^ col2str (name1, pos1, len1)
            ^ col2str (name2, pos2, len2))
-      else
+      else (
         match Hashtbl.add header_index ~key:name1 ~data:i with
         | `Ok -> loop (i + 1) ((name2, pos2, len2) :: l)
-        | `Duplicate -> Or_error.error_string ("Duplicate column name: " ^ name1)
+        | `Duplicate -> Or_error.error_string ("Duplicate column name: " ^ name1))
   in
   loop 0 header
 ;;
 
-let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
-      ?(strict=true) reader =
+let of_reader
+      ?(strip=false)
+      ?(skip_lines=0)
+      ?(on_parse_error=`Raise)
+      ~header
+      ?(strict=true)
+      reader
+  =
   match process_header header ~strict with
   | Error e -> Error e
   | Ok (header, header_index) ->
@@ -54,7 +60,8 @@ let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
           then data.(i) <- String.strip (String.sub line ~pos ~len)
           else data.(i) <- String.sub line ~pos ~len);
         Ok (Row.create header_index data)
-      with e -> Error e
+      with
+      | e -> Error e
     in
     let close () =
       don't_wait_for (Reader.close reader);
@@ -65,15 +72,17 @@ let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
       >>> function
       | `Eof -> close ()
       | `Ok line ->
-        match parse_line line with
-        | Ok row -> Pipe.write pipe_w row >>> loop
-        | Error e ->
-          match on_parse_error with
-          | `Raise -> close (); raise e
-          | `Handle f ->
-            match f (Queue.create ()) e with
-            | `Continue -> loop ()
-            | `Finish -> close ()
+        (match parse_line line with
+         | Ok row -> Pipe.write pipe_w row >>> loop
+         | Error e ->
+           (match on_parse_error with
+            | `Raise ->
+              close ();
+              raise e
+            | `Handle f ->
+              (match f (Queue.create ()) e with
+               | `Continue -> loop ()
+               | `Finish -> close ())))
     in
     upon (drop_lines reader skip_lines) loop;
     Ok pipe_r

@@ -75,7 +75,8 @@ module Parse_state = struct
     { acc : 'a
     ; sep : char
     ; quote : char
-    ; use_quoting : bool
+    ; use_quoting :
+        bool
     ; lineno : int
     ; step : Step.t
     ; field : string
@@ -89,14 +90,16 @@ module Parse_state = struct
   [@@deriving fields]
 
   let make_emit_field ~strip current_row field =
-    Fast_queue.enqueue current_row
+    Fast_queue.enqueue
+      current_row
       (if strip then Shared.strip_buffer field else Buffer.contents field);
     Buffer.clear field
   ;;
 
   let emit_row f i acc current_row =
     let acc = f (i + 1) acc current_row in
-    Fast_queue.clear current_row; acc
+    Fast_queue.clear current_row;
+    acc
   ;;
 
   let set_acc t acc = { t with acc }
@@ -188,7 +191,7 @@ module Parse_state = struct
         let c = get input i in
         if c = '\r'
         then continue t step
-        else
+        else (
           match step with
           | Field_start ->
             if c = t.quote && t.use_quoting
@@ -260,7 +263,7 @@ module Parse_state = struct
                 "In_quoted_field_after_quote looking at '%c' (lineno=%d)"
                 c
                 t.lineno
-                ()
+                ())
     in
     let t' = loop pos t t.step in
     { t' with
@@ -609,33 +612,52 @@ end = struct
   ;;
 
   let input_string t ~len input =
-    try First { t with state = Parse_state.input_string t.state ~len input }
-    with Header_parsed (row, offset) ->
+    try First { t with state = Parse_state.input_string t.state ~len input } with
+    | Header_parsed (row, offset) ->
       Second (t.transform row, String.sub input ~pos:offset ~len:(len - offset))
   ;;
 
   let input t ~len input =
-    try First { t with state = Parse_state.input t.state ~len input }
-    with Header_parsed (row, offset) ->
+    try First { t with state = Parse_state.input t.state ~len input } with
+    | Header_parsed (row, offset) ->
       Second (t.transform row, Bytes.To_string.sub input ~pos:offset ~len:(len - offset))
   ;;
 end
 
-let create_parse_state ?strip ?sep ?quote ?(on_invalid_row=On_invalid_row.raise)
-      ~header_map builder ~init ~f =
+let create_parse_state
+      ?strip
+      ?sep
+      ?quote
+      ?(on_invalid_row=On_invalid_row.raise)
+      ~header_map
+      builder
+      ~init
+      ~f
+  =
   let row_to_'a, fields_used = Builder.build ~header_map builder in
   let f _offset init row =
-    try f init (row_to_'a row) with exn ->
-    match on_invalid_row header_map row exn with
-    | `Yield x -> f init x
-    | `Skip -> init
-    | `Raise exn -> raise exn
+    try f init (row_to_'a row) with
+    | exn ->
+      (match on_invalid_row header_map row exn with
+       | `Yield x -> f init x
+       | `Skip -> init
+       | `Raise exn -> raise exn)
   in
   Parse_state.create ?strip ?sep ?quote ~fields_used ~init ~f ()
 ;;
 
-let fold_reader' ?strip ?(skip_lines=0) ?sep ?quote ?header ?on_invalid_row builder ~init
-      ~f r =
+let fold_reader'
+      ?strip
+      ?(skip_lines=0)
+      ?sep
+      ?quote
+      ?header
+      ?on_invalid_row
+      builder
+      ~init
+      ~f
+      r
+  =
   let%bind () = Shared.drop_lines r skip_lines in
   match%bind
     match Header_parse.create ?strip ?sep ?quote ?header builder with
@@ -665,7 +687,10 @@ let fold_reader' ?strip ?(skip_lines=0) ?sep ?quote ?header ?on_invalid_row buil
         ?on_invalid_row
         ~header_map
         builder
-        ~init:(Queue.create ()) ~f:(fun queue elt -> Queue.enqueue queue elt; queue)
+        ~init:(Queue.create ())
+        ~f:(fun queue elt ->
+          Queue.enqueue queue elt;
+          queue)
     in
     let state =
       Option.fold trailing_input ~init:state ~f:(fun state input ->
@@ -692,21 +717,58 @@ let bind_without_unnecessary_yielding x ~f =
   | None -> Deferred.bind x ~f
 ;;
 
-let fold_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~init ~f r =
-  fold_reader' ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~init r ~f:
-    (fun acc queue ->
-       Queue.fold queue ~init:(return acc) ~f:(fun deferred_acc row ->
-         bind_without_unnecessary_yielding deferred_acc ~f:(fun acc -> f acc row)))
+let fold_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~init ~f r
+  =
+  fold_reader'
+    ?strip
+    ?skip_lines
+    ?sep
+    ?quote
+    ?header
+    ?on_invalid_row
+    builder
+    ~init
+    r
+    ~f:(fun acc queue ->
+      Queue.fold queue ~init:(return acc) ~f:(fun deferred_acc row ->
+        bind_without_unnecessary_yielding deferred_acc ~f:(fun acc -> f acc row)))
 ;;
 
-let fold_reader_without_pushback ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row
-      builder ~init ~f r =
-  fold_reader' ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~init r ~f:
-    (fun acc queue -> return (Queue.fold queue ~init:acc ~f))
+let fold_reader_without_pushback
+      ?strip
+      ?skip_lines
+      ?sep
+      ?quote
+      ?header
+      ?on_invalid_row
+      builder
+      ~init
+      ~f
+      r
+  =
+  fold_reader'
+    ?strip
+    ?skip_lines
+    ?sep
+    ?quote
+    ?header
+    ?on_invalid_row
+    builder
+    ~init
+    r
+    ~f:(fun acc queue -> return (Queue.fold queue ~init:acc ~f))
 ;;
 
-let fold_reader_to_pipe ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
-      reader =
+let fold_reader_to_pipe
+      ?strip
+      ?skip_lines
+      ?sep
+      ?quote
+      ?header
+      ?on_invalid_row
+      builder
+      reader
+  =
   let r, w = Pipe.create () in
   let write_to_pipe : unit Deferred.t =
     let%bind () =
@@ -719,16 +781,18 @@ let fold_reader_to_pipe ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row b
         ?on_invalid_row
         builder
         ~init:()
-        reader ~f:(fun () queue ->
+        reader
+        ~f:(fun () queue ->
           if Pipe.is_closed w
-          then
+          then (
             let%bind () = Reader.close reader in
-            Deferred.never ()
+            Deferred.never ())
           else Pipe.transfer_in w ~from:queue)
     in
     return (Pipe.close w)
   in
-  don't_wait_for write_to_pipe; r
+  don't_wait_for write_to_pipe;
+  r
 ;;
 
 let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_string =
@@ -736,20 +800,23 @@ let fold_string ?strip ?sep ?quote ?header ?on_invalid_row builder ~init ~f csv_
     match Header_parse.create ?strip ?sep ?quote ?header builder with
     | Second header_map -> Some (header_map, csv_string)
     | First header_parse ->
-      match
-        Header_parse.input_string header_parse ~len:(String.length csv_string) csv_string
-      with
-      | First _ ->
-        if String.is_empty csv_string
-        then None
-        else
-          raise_s
-            [%message
-              "String ended mid-header row"
-                (csv_string : string)
-                (sep : char option)
-                (header : Header.t option)]
-      | Second (header_map, csv_string) -> Some (header_map, csv_string)
+      (match
+         Header_parse.input_string
+           header_parse
+           ~len:(String.length csv_string)
+           csv_string
+       with
+       | First _ ->
+         if String.is_empty csv_string
+         then None
+         else
+           raise_s
+             [%message
+               "String ended mid-header row"
+                 (csv_string : string)
+                 (sep : char option)
+                 (header : Header.t option)]
+       | Second (header_map, csv_string) -> Some (header_map, csv_string))
   with
   | None -> init
   | Some (header_map, csv_string) ->
@@ -783,11 +850,17 @@ module Manual = struct
     in
     let queue = Parse_state.acc parse_state in
     let result = Fast_queue.to_list queue in
-    Fast_queue.clear queue; Second parse_state, result
+    Fast_queue.clear queue;
+    Second parse_state, result
   ;;
 
   let create_parse_state ?strip ?sep ?quote header_map =
-    Parse_state.create ?strip ?sep ?quote ~fields_used:None ~init:(Fast_queue.create ())
+    Parse_state.create
+      ?strip
+      ?sep
+      ?quote
+      ~fields_used:None
+      ~init:(Fast_queue.create ())
       ~f:(fun _ queue row ->
         Fast_queue.enqueue queue (Row.create_of_fq header_map row);
         queue)
@@ -838,8 +911,16 @@ let create_reader ?strip ?skip_lines ?sep ~header filename =
 ;;
 
 let parse_string ?strip ?sep ~header csv_string =
-  fold_string ?strip ?sep ~header Row.builder csv_string ~init:(Fast_queue.create ()) ~f:
-    (fun queue row -> Fast_queue.enqueue queue row; queue)
+  fold_string
+    ?strip
+    ?sep
+    ~header
+    Row.builder
+    csv_string
+    ~init:(Fast_queue.create ())
+    ~f:(fun queue row ->
+      Fast_queue.enqueue queue row;
+      queue)
   |> Fast_queue.to_list
 ;;
 

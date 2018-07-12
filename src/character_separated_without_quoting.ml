@@ -2,8 +2,15 @@ open! Core
 open! Async
 open Shared
 
-let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
-      ?(quote='\\') ~sep reader =
+let of_reader
+      ?(strip=false)
+      ?(skip_lines=0)
+      ?(on_parse_error=`Raise)
+      ~header
+      ?(quote='\\')
+      ~sep
+      reader
+  =
   let module Table = String.Table in
   assert (quote <> sep);
   let lineno = ref 1 in
@@ -38,7 +45,10 @@ let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
     Reader.read reader buffer
     >>> function
     | `Eof ->
-      if Queue.length current_row <> 0 then ( emit_field (); emit_row ());
+      if Queue.length current_row <> 0
+      then (
+        emit_field ();
+        emit_row ());
       on_eof ();
       close ()
     | `Ok n ->
@@ -56,13 +66,17 @@ let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
                   "escape character found at the end of a line (lineno=%d)"
                   !lineno
                   ())
-              else ( emit_field (); emit_row ()))
+              else (
+                emit_field ();
+                emit_row ()))
             else if !quoted
             then (
               quoted := false;
               add_char c)
             else if c = sep
-            then ( emit_pending_cr (); emit_field ())
+            then (
+              emit_pending_cr ();
+              emit_field ())
             else if c = quote
             then (
               emit_pending_cr ();
@@ -72,16 +86,16 @@ let of_reader ?(strip=false) ?(skip_lines=0) ?(on_parse_error=`Raise) ~header
       in
       flush_rows ()
       >>> fun () ->
-      match res with
-      | Ok () -> loop ()
-      | Error e ->
-        match on_parse_error with
-        | `Raise -> raise e
-        | `Handle f ->
-          emit_field ();
-          match f current_row e with
-          | `Continue -> loop ()
-          | `Finish -> close ()
+      (match res with
+       | Ok () -> loop ()
+       | Error e ->
+         (match on_parse_error with
+          | `Raise -> raise e
+          | `Handle f ->
+            emit_field ();
+            (match f current_row e with
+             | `Continue -> loop ()
+             | `Finish -> close ())))
   in
   upon (drop_lines reader skip_lines) loop;
   pipe_r

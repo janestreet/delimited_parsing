@@ -11,8 +11,7 @@ module Character_separated_without_quoting =
 module Csv =
   Csv
 
-(** [Positional] parses fixed-width fields. *)
-module Positional = Positional
+(** [Positional] parses fixed-width fields. *)module Positional = Positional
 
 (** {1} Modules shared between multiple parsers. *)
 

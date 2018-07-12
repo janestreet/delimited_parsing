@@ -27,13 +27,14 @@ let sexp_of_t t =
 let to_string t = Sexp.to_string_hum (sexp_of_t t)
 
 let index_exn t header =
-  try String.Map.find_exn t.header_map header with _ ->
-    raise_s [%message "Header not found" (header : string)]
+  try String.Map.find_exn t.header_map header with
+  | _ -> raise_s [%message "Header not found" (header : string)]
 ;;
 
 let get_exn_p t header here =
   let i = index_exn t header in
-  try (t.fields).(i) with _ ->
+  try (t.fields).(i) with
+  | _ ->
     raise_s
       [%message
         "Header exists in file but not for this row"
@@ -46,7 +47,8 @@ let get_exn t header = get_exn_p t header [%here]
 
 let get_conv_exn t header here conv =
   let v = get_exn_p t header here in
-  try conv v with exn ->
+  try conv v with
+  | exn ->
     raise_s
       [%message
         "Failed to parse"
@@ -69,20 +71,22 @@ let get_conv_opt_exn t header here conv =
   match get_opt_exn t header with
   | None -> None
   | Some v ->
-    try Some (conv v) with exn ->
-      raise_s
-        [%message
-          "Failed to parse"
-            (here : Source_code_position.t)
-            (header : string)
-            ~row:(t : t)
-            (exn : exn)]
+    (try Some (conv v) with
+     | exn ->
+       raise_s
+         [%message
+           "Failed to parse"
+             (here : Source_code_position.t)
+             (header : string)
+             ~row:(t : t)
+             (exn : exn)])
 ;;
 
 let nth_exn t i = (t.fields).(i)
 
 let nth_conv_exn t i here conv =
-  try conv (nth_exn t i) with exn ->
+  try conv (nth_exn t i) with
+  | exn ->
     raise_s
       [%message
         "Failed to parse"

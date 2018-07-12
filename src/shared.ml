@@ -15,10 +15,10 @@ let drop_lines r lines =
   let rec loop n =
     if n = 0
     then Deferred.unit
-    else
+    else (
       match%bind Reader.read_line r with
       | `Ok _ -> loop (n - 1)
-      | `Eof -> failwithf "file has fewer than %i lines" lines ()
+      | `Eof -> failwithf "file has fewer than %i lines" lines ())
   in
   loop lines
 ;;
@@ -42,14 +42,15 @@ let strip_buffer buf =
   match first_non_space 0 with
   | None -> ""
   | Some s ->
-    match last_non_space (len - 1) with
-    | None -> assert false
-    | Some e -> Buffer.To_string.sub buf ~pos:s ~len:(e - s + 1)
+    (match last_non_space (len - 1) with
+     | None -> assert false
+     | Some e -> Buffer.To_string.sub buf ~pos:s ~len:(e - s + 1))
 ;;
 
 let make_emit_field ~strip current_row field =
   stage (fun () ->
-    Queue.enqueue current_row
+    Queue.enqueue
+      current_row
       (if strip then strip_buffer field else Buffer.contents field);
     Buffer.clear field)
 ;;
@@ -93,7 +94,8 @@ let make_emit_row current_row row_queue header ~lineno =
               "The required header '%s' was not found in '%s' (lineno=%d)"
               must_exist
               (String.concat ~sep:"," headers)
-              !lineno ()
+              !lineno
+              ()
           | Some (i, _) -> Hashtbl.set header_index ~key:must_exist ~data:i)
       | `Replace _new_headers -> () (* already set above *)
       | `Transform f ->
