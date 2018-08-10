@@ -1,6 +1,7 @@
 open! Core
 open! Async
 open! Shared
+module Row = Delimited_core.Row
 
 type header = (string * int * int) list
 

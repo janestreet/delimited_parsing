@@ -15,10 +15,10 @@ module Csv =
 
 (** {1} Modules shared between multiple parsers. *)
 
-module Header = Header
-module Row = Row
+module Header = Delimited_core.Header
+module Row = Delimited_core.Row
 
 (** {1} For writing out values into delimited data. *)
 
-module Builder = Builder
+module Builder = Delimited_core.Builder
 module Shared = Shared

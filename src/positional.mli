@@ -1,6 +1,7 @@
-open! Core
-open! Async
+open Core
+open Async
 open Shared
+open Delimited_core
 
 (** All readers defined below will raise if they encounter unparsable content. *)
 
