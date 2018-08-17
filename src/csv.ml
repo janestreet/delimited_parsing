@@ -1,7 +1,7 @@
 open Core
 open Async
 open! Int.Replace_polymorphic_compare
-include Delimited_core.Csv
+include Delimited_kernel.Csv
 open Deferred.Let_syntax
 
 (* the maximum read/write I managed to get off of a socket or disk was 65k *)
@@ -181,7 +181,7 @@ let parse_string ?strip ?sep ~header csv_string =
 ;;
 
 let write_field ~sep w field =
-  Writer.write w (Delimited_core.Csv_writer.maybe_escape_field ~sep field)
+  Writer.write w (Delimited_kernel.Csv_writer.maybe_escape_field ~sep field)
 ;;
 
 let rec write_line ~sep ~line_break w line =

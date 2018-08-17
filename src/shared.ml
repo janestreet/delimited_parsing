@@ -1,6 +1,6 @@
 open Core
 open Async
-include Delimited_core.Shared
+include Delimited_kernel.Shared
 
 let drop_lines r lines =
   let rec loop n =
