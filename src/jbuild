@@ -1,5 +1,5 @@
 (library (
-  (name delimited_parsing)
+  (name delimited)
   (public_name delimited_parsing)
   (libraries (
     async

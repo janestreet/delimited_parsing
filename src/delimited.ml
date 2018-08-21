@@ -1,4 +1,4 @@
-(** [Delimited_parsing] contains parsers for three common file formats: *)
+(** [Delimited] contains parsers for three common file formats: *)
 
 (** [Character_separated_without_quoting] parses fields separated by a character, where
     fields may contain escaped characters (e,g, [\n]) but fields may not be quoted (e.g.,
