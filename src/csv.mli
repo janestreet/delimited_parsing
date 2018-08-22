@@ -38,8 +38,8 @@ val fold_reader
   -> Reader.t
   -> 'b Deferred.t
 
-(** [of_reader' ?strip ?skip_lines ?sep ?quote ~init ~f r] works similarly to
-    [of_reader], except for the [f] argument. [of_reader'] runs [f] on batches
+(** [fold_reader' ?strip ?skip_lines ?sep ?quote ~init ~f r] works similarly to
+    [fold_reader], except for the [f] argument. [fold_reader'] runs [f] on batches
     of [Row.t]s rather than running [f] on each individual row.
 *)
 val fold_reader'
