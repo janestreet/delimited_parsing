@@ -1,7 +1,6 @@
 open! Core
 open! Async
 open Delimited_kernel
-
 include module type of Delimited_kernel.Csv
 
 (** [fold_reader ?strip ?skip_lines ?sep ?quote ~init ~f r] produces a value by folding

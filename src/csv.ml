@@ -9,7 +9,7 @@ let buffer_size = 10 * 65 * 1024
 
 let fold_reader'
       ?strip
-      ?(skip_lines=0)
+      ?(skip_lines = 0)
       ?sep
       ?quote
       ?header
@@ -196,7 +196,7 @@ let rec write_line ~sep ~line_break w line =
     write_line ~sep ~line_break w rest
 ;;
 
-let of_writer ?(sep=',') ?(line_breaks=`Windows) writer =
+let of_writer ?(sep = ',') ?(line_breaks = `Windows) writer =
   let line_break =
     match line_breaks with
     | `Unix -> "\n"

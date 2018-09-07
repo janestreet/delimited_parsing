@@ -40,11 +40,11 @@ let process_header header ~strict =
 ;;
 
 let of_reader
-      ?(strip=false)
-      ?(skip_lines=0)
-      ?(on_parse_error=`Raise)
+      ?(strip = false)
+      ?(skip_lines = 0)
+      ?(on_parse_error = `Raise)
       ~header
-      ?(strict=true)
+      ?(strict = true)
       reader
   =
   match process_header header ~strict with
@@ -112,7 +112,7 @@ let rec write_line w header next_pos line =
   | _, [] -> raise (Invalid_argument "Too few fields given")
 ;;
 
-let of_writer writer ?(strict=true) header =
+let of_writer writer ?(strict = true) header =
   match process_header header ~strict with
   | Error e -> Error e
   | Ok (header, _) ->

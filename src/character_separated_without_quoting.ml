@@ -3,11 +3,11 @@ open! Async
 open Shared
 
 let of_reader
-      ?(strip=false)
-      ?(skip_lines=0)
-      ?(on_parse_error=`Raise)
+      ?(strip = false)
+      ?(skip_lines = 0)
+      ?(on_parse_error = `Raise)
       ~header
-      ?(quote='\\')
+      ?(quote = '\\')
       ~sep
       reader
   =
