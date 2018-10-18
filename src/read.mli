@@ -1,10 +1,13 @@
-open! Core
-open! Async
-open Delimited_kernel
-include module type of Delimited_kernel.Csv
+open Core
+open Async
+
+(** @open *)
+include module type of Delimited_kernel.Read
+
+(** Async helpers for delimited parsing *)
 
 (** [fold_reader ?strip ?skip_lines ?sep ?quote ~init ~f r] produces a value by folding
-    over a csv document read from [r].
+    over a csv document read from [r]. The reader will be closed on EOF.
 
     If [strip] is true, leading and trailing whitespace is stripped from each field.
     Default value is false.
@@ -18,11 +21,11 @@ include module type of Delimited_kernel.Csv
     [sep] is the character that separates fields within a row.
     Default value is ','
 
-    [quote] defines a character to use for quoting. [ `Using '"' ]
-    implements the MS Excel convention: either a field is unquoted, or it has leading and
-    trailing quotes and internal escaped characters are represented as quote-char char,
-    e.g., {|"a|} for [a].  [ `No_quoting ] means all characters are literal.
-    The default is [ `Using '"' ].
+    [quote] defines a character to use for quoting. [ `Using '"' ] implements
+    the MS Excel convention: either a field is unquoted, or it has leading and
+    trailing quotes and internal escaped characters are represented as
+    quote-char char, e.g., {i "\n} to escape a newline. [`No_quoting] means all
+    characters are literal. The default is [`Using '"']
 *)
 val fold_reader
   :  ?strip:bool
@@ -30,7 +33,7 @@ val fold_reader
   -> ?sep:char
   -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
-  -> ?on_invalid_row:'a on_invalid_row
+  -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
   -> init:'b
   -> f:('b -> 'a -> 'b Deferred.t)
@@ -47,68 +50,47 @@ val fold_reader'
   -> ?sep:char
   -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
-  -> ?on_invalid_row:'a on_invalid_row
+  -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
   -> init:'b
   -> f:('b -> 'a Queue.t -> 'b Deferred.t)
   -> Reader.t
   -> 'b Deferred.t
 
+(** Same as [fold_reader] but the fold function does not exert pushback on the fold. *)
 val fold_reader_without_pushback
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
   -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
-  -> ?on_invalid_row:'a on_invalid_row
+  -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
   -> init:'b
   -> f:('b -> 'a -> 'b)
   -> Reader.t
   -> 'b Deferred.t
 
-val fold_reader_to_pipe
+(** [pipe_of_reader t reader] produces a pipe reader of parsed values. *)
+val pipe_of_reader
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
   -> ?quote:[`No_quoting | `Using of char]
   -> ?header:Header.t
-  -> ?on_invalid_row:'a on_invalid_row
+  -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
   -> Reader.t
   -> 'a Pipe.Reader.t
 
-(** Non-applicative non-folding interface. All readers defined below will raise if they encounter unparsable content. *)
-
-(** [of_reader ?strip ~header r] returns a row pipe based on data read from
-    the provided reader.
-*)
-val of_reader
-  :  ?strip:bool
-  -> ?skip_lines:int
-  -> ?sep:char
-  -> header:Header.t
-  -> Reader.t
-  -> Row.t Pipe.Reader.t
-
-(** [create_reader ?strip ~header filename] same as of_reader, but creates the reader
-    for you *)
+(** [create_reader filename] opens a reader for the given filename & returns a pipe of its parsed values. *)
 val create_reader
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> header:Header.t
+  -> ?quote:[`No_quoting | `Using of char]
+  -> ?header:Header.t
+  -> ?on_invalid_row:'a On_invalid_row.t
+  -> 'a t
   -> string
-  -> Row.t Pipe.Reader.t Deferred.t
-
-val of_writer
-  :  ?sep:char
-  -> ?line_breaks:[`Unix | `Windows] (** default is [`Windows] *)
-  -> Writer.t
-  -> string list Pipe.Writer.t
-
-val create_writer
-  :  ?sep:char
-  -> ?line_breaks:[`Unix | `Windows] (** default is [`Windows] *)
-  -> string
-  -> string list Pipe.Writer.t Deferred.t
+  -> 'a Pipe.Reader.t Deferred.t

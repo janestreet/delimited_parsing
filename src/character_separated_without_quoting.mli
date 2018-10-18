@@ -1,7 +1,8 @@
 open! Core
 open! Async
 open Shared
-open Delimited_kernel
+module Row = Delimited_kernel.Read.Row
+module Header = Delimited_kernel.Read.Header
 
 (** All readers defined below will raise if they encounter unparsable content. *)
 

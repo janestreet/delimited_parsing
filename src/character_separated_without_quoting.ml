@@ -1,6 +1,8 @@
 open! Core
 open! Async
 open Shared
+module Row = Delimited_kernel.Read.Row
+module Header = Delimited_kernel.Read.Header
 
 let of_reader
       ?(strip = false)
