@@ -1,10 +1,13 @@
-(** Read CSVs *)
+(** Read CSVs & CSV-like delimited formats (following the CSV quoting behaviour).
+
+    These formats are loosely documented by RFC 4180: https://www.ietf.org/rfc/rfc4180.txt
+*)
 module Read = Read
 
-(** Write CSVs *)
+(** Write CSVs & CSV-like delimited formats. *)
 module Write = Write
 
-(** Parsers for non-csv formats *)
+(** Parsers for non-CSV-like formats *)
 module Non_csv = struct
   (** [Character_separated_without_quoting] parses fields separated by a character, where
       fields may contain escaped characters (e,g, [\n]) but fields may not be quoted (e.g.,
