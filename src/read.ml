@@ -21,7 +21,7 @@ let fold_reader'
   =
   let%bind () = Shared.drop_lines r skip_lines in
   match%bind
-    match Expert.Parse_header.create ?strip ?sep ?quote ?header builder with
+    match Expert.Parse_header.create ?strip ?sep ?quote ?header () with
     | Second header_map -> return (Some (header_map, None))
     | First header_parse ->
       let buffer = Bytes.create buffer_size in

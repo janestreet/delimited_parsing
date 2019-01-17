@@ -14,9 +14,8 @@ depends: [
   "async"
   "core"
   "core_extended"
-  "expect_test_helpers"
   "ppx_jane"
-  "dune"                {build & >= "1.5.1"}
+  "dune"          {build & >= "1.5.1"}
 ]
 synopsis: "Parsing of character (e.g., comma) separated and fixed-width values"
 description: "
