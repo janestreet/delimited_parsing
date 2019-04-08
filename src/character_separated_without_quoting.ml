@@ -1,4 +1,5 @@
 open! Core
+open Poly
 open! Async
 open Shared
 module Row = Delimited_kernel.Read.Row
