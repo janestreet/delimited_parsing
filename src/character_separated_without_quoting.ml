@@ -1,6 +1,5 @@
-open! Core
-open Poly
-open! Async
+open Core
+open Async
 open Shared
 module Row = Delimited_kernel.Read.Row
 module Header = Delimited_kernel.Read.Header
@@ -15,7 +14,7 @@ let of_reader
       reader
   =
   let module Table = String.Table in
-  assert (quote <> sep);
+  assert (Char.O.(quote <> sep));
   let lineno = ref 1 in
   let pipe_r, pipe_w = Pipe.create () in
   let buffer = Bytes.create buffer_size in
@@ -37,7 +36,7 @@ let of_reader
     (* delay adding '\r' characters until we know that the next character is
        not '\n' *)
     emit_pending_cr ();
-    if c = '\r' then prev_was_cr := true else Buffer.add_char field c
+    if Char.equal c '\r' then prev_was_cr := true else Buffer.add_char field c
   in
   let close () =
     don't_wait_for (flush_rows ());
@@ -59,7 +58,7 @@ let of_reader
         Result.try_with (fun () ->
           for i = 0 to n - 1 do
             let c = Bytes.get buffer i in
-            if c = '\n'
+            if Char.equal c '\n'
             then (
               prev_was_cr := false;
               if !quoted
@@ -76,11 +75,11 @@ let of_reader
             then (
               quoted := false;
               add_char c)
-            else if c = sep
+            else if Char.equal c sep
             then (
               emit_pending_cr ();
               emit_field ())
-            else if c = quote
+            else if Char.equal c quote
             then (
               emit_pending_cr ();
               quoted := true)
