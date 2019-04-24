@@ -2,7 +2,7 @@ open Async
 
 (** @inline *)
 include
-module type of Delimited_kernel.Write
+  module type of Delimited_kernel.Write
   with module By_row := Delimited_kernel.Write.By_row
 
 (** Make a pipe writer for ['a]s from a writer. The ['a]s will be written out as CSVs.
