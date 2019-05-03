@@ -1,4 +1,6 @@
-# Delimited
+Delimited
+=========
+
 This library contains parsers & generators for CSVs (and CSV-like delimited
 formats). It additionally contains some non-csv format parsers.
 
