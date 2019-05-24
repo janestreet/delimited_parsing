@@ -14,7 +14,7 @@ The `Delimited.Read` module contains two mechanisms for reading CSVs:
   error.
 
 In new code you should favour the applicative interface (it's like
-`Command.Spec`). See the example under `example/` or ask a delimited dev for
+`Command.Param`). See the example under `example/` or ask a delimited dev for
 help if you're not familiar.
 
 ## Writing CSVs
@@ -37,4 +37,3 @@ There are two non-csv formats supported for parsing:
 * `Non_csv.character_separated_without_quoting`: like CSVs but no field may
   contain newlines or the delimiter character as there is no quoting
 * `Non_csv.Positional`: parses fixed-width fields
-
