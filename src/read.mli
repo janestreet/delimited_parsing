@@ -1,8 +1,7 @@
 open Core
 open Async
 
-(** @open *)
-include module type of Delimited_kernel.Read
+include module type of Delimited_kernel.Read (** @open *)
 
 (** Async helpers for delimited parsing *)
 
@@ -31,7 +30,7 @@ val fold_reader
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[`No_quoting | `Using of char]
+  -> ?quote:[ `No_quoting | `Using of char ]
   -> ?header:Header.t
   -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
@@ -48,7 +47,7 @@ val fold_reader'
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[`No_quoting | `Using of char]
+  -> ?quote:[ `No_quoting | `Using of char ]
   -> ?header:Header.t
   -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
@@ -62,7 +61,7 @@ val fold_reader_without_pushback
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[`No_quoting | `Using of char]
+  -> ?quote:[ `No_quoting | `Using of char ]
   -> ?header:Header.t
   -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
@@ -76,7 +75,7 @@ val pipe_of_reader
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[`No_quoting | `Using of char]
+  -> ?quote:[ `No_quoting | `Using of char ]
   -> ?header:Header.t
   -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t
@@ -88,7 +87,7 @@ val create_reader
   :  ?strip:bool
   -> ?skip_lines:int
   -> ?sep:char
-  -> ?quote:[`No_quoting | `Using of char]
+  -> ?quote:[ `No_quoting | `Using of char ]
   -> ?header:Header.t
   -> ?on_invalid_row:'a On_invalid_row.t
   -> 'a t

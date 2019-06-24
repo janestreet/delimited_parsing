@@ -16,11 +16,11 @@ type header = (string * int * int) list
 (** [of_reader ?quote ?strip ?skip_lines ~sep ~header r] returns a row pipe based on data
     read from the provided reader.  [sep] is used as the separator between fields, and is
     assumed to be escaped with \ unless [quote] is given.  *)
-val of_reader :
-  (header, ?strict:bool -> Reader.t -> Row.t Pipe.Reader.t Or_error.t) reader
+val of_reader
+  : (header, ?strict:bool -> Reader.t -> Row.t Pipe.Reader.t Or_error.t) reader
 
-val create_reader :
-  (header, ?strict:bool -> string -> Row.t Pipe.Reader.t Deferred.Or_error.t) reader
+val create_reader
+  : (header, ?strict:bool -> string -> Row.t Pipe.Reader.t Deferred.Or_error.t) reader
 
 val of_writer
   :  Writer.t
