@@ -5,7 +5,21 @@
 module Read = Read
 
 (** Write CSVs & CSV-like delimited formats. *)
-module Write = Write
+module Write = struct
+  include Write
+
+  (** Helper for converting from the old interface. Use this snippet in files
+      to disable the expert interface:
+
+      {[
+        module Delimited = struct
+          include Delimited
+          module Write = Delimited.Write.Without_expert
+        end
+      ]}
+  *)
+  module Without_expert : module type of Write with module Expert := Write.Expert = Write
+end
 
 (** Parsers for non-CSV-like formats *)
 module Non_csv = struct
