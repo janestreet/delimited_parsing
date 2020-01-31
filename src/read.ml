@@ -28,10 +28,17 @@ let fold_reader'
       Deferred.repeat_until_finished header_parse (fun header_parse ->
         match%bind Reader.read r buffer ~len:buffer_size with
         | `Eof ->
-          let%map () = Reader.close r in
-          if Expert.Parse_header.is_at_beginning_of_row header_parse
-          then failwith "Header line was not found"
-          else failwith "Header is incomplete"
+          let newline = "\n" in
+          (match
+             Expert.Parse_header.input_string
+               header_parse
+               ~len:(String.length newline)
+               newline
+           with
+           | First (_ : Expert.Parse_header.t) ->
+             let%map () = Reader.close r in
+             failwith "Header is incomplete"
+           | Second (headers, input) -> return (`Finished (Some (headers, Some input))))
         | `Ok len ->
           return
             (match Expert.Parse_header.input header_parse ~len buffer with
