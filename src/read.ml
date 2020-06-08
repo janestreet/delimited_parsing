@@ -21,8 +21,18 @@ let fold_reader'
   =
   let%bind () = Shared.drop_lines r skip_lines in
   match%bind
-    match Expert.Parse_header.create ?strip ?sep ?quote ?header () with
-    | Second header_map -> return (Some (header_map, None))
+    match
+      Expert.Parse_header.create
+        ?strip
+        ?sep
+        ?quote
+        ~start_line_number:(skip_lines + 1)
+        ?header
+        ()
+    with
+    | Second { header_map; next_line_number; consumed } ->
+      assert (consumed = 0);
+      return (Some (header_map, None, next_line_number))
     | First header_parse ->
       let buffer = Bytes.create buffer_size in
       Deferred.repeat_until_finished header_parse (fun header_parse ->
@@ -35,24 +45,28 @@ let fold_reader'
                ~len:(String.length newline)
                newline
            with
-           | First (_ : Expert.Parse_header.t) ->
+           | First (_ : Expert.Parse_header.Partial.t) ->
              let%map () = Reader.close r in
              failwith "Header is incomplete"
-           | Second (headers, input) -> return (`Finished (Some (headers, Some input))))
+           | Second { header_map; consumed = (_ : int); next_line_number } ->
+             return (`Finished (Some (header_map, None, next_line_number))))
         | `Ok len ->
           return
-            (match Expert.Parse_header.input header_parse ~len buffer with
+            (match Expert.Parse_header.input header_parse ~pos:0 ~len buffer with
              | First header_parse -> `Repeat header_parse
-             | Second (headers, input) -> `Finished (Some (headers, Some input))))
+             | Second { header_map; consumed; next_line_number } ->
+               let pos, len = consumed, len - consumed in
+               `Finished (Some (header_map, Some (buffer, pos, len), next_line_number))))
   with
   | None -> return init
-  | Some (header_map, trailing_input) ->
+  | Some (header_map, trailing_input, start_line_number) ->
     let state =
       Expert.create_parse_state
         ?strip
         ?sep
         ?quote
         ?on_invalid_row
+        ~start_line_number
         ~header_map
         builder
         ~init:(Queue.create ())
@@ -61,8 +75,8 @@ let fold_reader'
           queue)
     in
     let state =
-      Option.fold trailing_input ~init:state ~f:(fun state input ->
-        Expert.Parse_state.input_string state input)
+      Option.fold trailing_input ~init:state ~f:(fun state (input, pos, len) ->
+        Expert.Parse_state.input state input ~pos ~len)
     in
     let buffer = Bytes.create buffer_size in
     Deferred.repeat_until_finished (state, init) (fun (state, init) ->
