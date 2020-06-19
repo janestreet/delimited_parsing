@@ -20,77 +20,33 @@ let fold_reader'
       r
   =
   let%bind () = Shared.drop_lines r skip_lines in
-  match%bind
-    match
-      Expert.Parse_header.create
-        ?strip
-        ?sep
-        ?quote
-        ~start_line_number:(skip_lines + 1)
-        ?header
-        ()
-    with
-    | Second { header_map; next_line_number; consumed } ->
-      assert (consumed = 0);
-      return (Some (header_map, None, next_line_number))
-    | First header_parse ->
-      let buffer = Bytes.create buffer_size in
-      Deferred.repeat_until_finished header_parse (fun header_parse ->
-        match%bind Reader.read r buffer ~len:buffer_size with
-        | `Eof ->
-          let newline = "\n" in
-          (match
-             Expert.Parse_header.input_string
-               header_parse
-               ~len:(String.length newline)
-               newline
-           with
-           | First (_ : Expert.Parse_header.Partial.t) ->
-             let%map () = Reader.close r in
-             failwith "Header is incomplete"
-           | Second { header_map; consumed = (_ : int); next_line_number } ->
-             return (`Finished (Some (header_map, None, next_line_number))))
-        | `Ok len ->
-          return
-            (match Expert.Parse_header.input header_parse ~pos:0 ~len buffer with
-             | First header_parse -> `Repeat header_parse
-             | Second { header_map; consumed; next_line_number } ->
-               let pos, len = consumed, len - consumed in
-               `Finished (Some (header_map, Some (buffer, pos, len), next_line_number))))
-  with
-  | None -> return init
-  | Some (header_map, trailing_input, start_line_number) ->
-    let state =
-      Expert.create_parse_state
-        ?strip
-        ?sep
-        ?quote
-        ?on_invalid_row
-        ~start_line_number
-        ~header_map
-        builder
-        ~init:(Queue.create ())
-        ~f:(fun queue elt ->
-          Queue.enqueue queue elt;
-          queue)
-    in
-    let state =
-      Option.fold trailing_input ~init:state ~f:(fun state (input, pos, len) ->
-        Expert.Parse_state.input state input ~pos ~len)
-    in
-    let buffer = Bytes.create buffer_size in
-    Deferred.repeat_until_finished (state, init) (fun (state, init) ->
-      match%bind Reader.read r buffer ~len:buffer_size with
-      | `Eof ->
-        let state = Expert.Parse_state.finish state in
-        let%bind init = f init (Expert.Parse_state.acc state) in
-        let%map () = Reader.close r in
-        `Finished init
-      | `Ok i ->
-        let state = Expert.Parse_state.input state buffer ~len:i in
-        let%map init = f init (Expert.Parse_state.acc state) in
-        Queue.clear (Expert.Parse_state.acc state);
-        `Repeat (state, init))
+  let buffer = Bytes.create buffer_size in
+  let queue = Queue.create () in
+  let state =
+    Streaming.create
+      ?strip
+      ?sep
+      ?quote
+      ~start_line_number:(skip_lines + 1)
+      ?header
+      ?on_invalid_row
+      builder
+      ~init:()
+      ~f:(fun () elt -> Queue.enqueue queue elt)
+  in
+  Deferred.repeat_until_finished (state, init) (fun (state, acc) ->
+    match%bind Reader.read r buffer ~len:buffer_size with
+    | `Eof ->
+      let (_ : unit Streaming.t) = Streaming.finish state in
+      let%bind acc = if Queue.is_empty queue then return acc else f acc queue in
+      Queue.clear queue;
+      let%map () = Reader.close r in
+      `Finished acc
+    | `Ok len ->
+      let state = Streaming.input state buffer ~len in
+      let%map acc = if Queue.is_empty queue then return acc else f acc queue in
+      Queue.clear queue;
+      `Repeat (state, acc))
 ;;
 
 let bind_without_unnecessary_yielding x ~f =
