@@ -1,7 +1,33 @@
 open Core
 open Async
 
-include module type of Delimited_kernel.Read (** @open *)
+include
+  module type of Delimited_kernel.Read
+  with module Streaming := Delimited_kernel.Read.Streaming
+(** @open *)
+
+module Streaming : sig
+  include module type of Delimited_kernel.Read.Streaming (** @open *)
+
+  (** [input_reader t reader] feeds all bytes from [reader] to the delimited parser.  It
+      does not call [finish] after reaching [EOF], one need to call it explicitly if
+      needed. *)
+  val input_reader : 'a t -> Reader.t -> 'a t Deferred.t
+
+  (** Reads all bytes from [filename] and call [finish] after reaching [EOF]. *)
+  val read_file
+    :  ?strip:bool
+    -> ?sep:char
+    -> ?quote:[ `No_quoting | `Using of char ]
+    -> ?start_line_number:int
+    -> ?on_invalid_row:'a On_invalid_row.t
+    -> ?header:Header.t
+    -> 'a builder_t
+    -> init:'b
+    -> f:('b -> 'a -> 'b)
+    -> filename:string
+    -> 'b t Deferred.t
+end
 
 (** Async helpers for delimited parsing *)
 

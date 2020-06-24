@@ -7,6 +7,49 @@ open! Int.Replace_polymorphic_compare
 (* the maximum read/write I managed to get off of a socket or disk was 65k *)
 let buffer_size = 10 * 65 * 1024
 
+module Streaming = struct
+  include Delimited_kernel.Read.Streaming
+
+  let input_reader t r =
+    let buffer = Bytes.create buffer_size in
+    Deferred.repeat_until_finished t (fun t ->
+      match%map Reader.read r buffer ~len:buffer_size with
+      | `Eof -> `Finished t
+      | `Ok len ->
+        let t = Streaming.input t buffer ~len in
+        `Repeat t)
+  ;;
+
+  let read_file
+        ?strip
+        ?sep
+        ?quote
+        ?start_line_number
+        ?on_invalid_row
+        ?header
+        builder
+        ~init
+        ~f
+        ~filename
+    =
+    let t =
+      create
+        ?strip
+        ?sep
+        ?quote
+        ?start_line_number
+        ?on_invalid_row
+        ?header
+        builder
+        ~init
+        ~f
+    in
+    let%map t = Reader.with_file filename ~f:(input_reader t) in
+    let t = finish t in
+    t
+  ;;
+end
+
 let fold_reader'
       ?strip
       ?(skip_lines = 0)
