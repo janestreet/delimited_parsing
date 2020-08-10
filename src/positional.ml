@@ -8,9 +8,7 @@ type header = (string * int * int) list
 let process_header header ~strict =
   let header = List.sort header ~compare:(fun (_, a, _) (_, b, _) -> Int.compare a b) in
   let header_index = String.Table.create () in
-  let col2str (name, pos, len) =
-    sprintf "(name: %s, start:%i, length:%i)" name pos len
-  in
+  let col2str (name, pos, len) = sprintf "(name: %s, start:%i, length:%i)" name pos len in
   let rec loop i l =
     match l with
     | [] -> Ok (header, header_index)

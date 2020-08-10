@@ -22,11 +22,7 @@ val of_reader
 val create_reader
   : (header, ?strict:bool -> string -> Row.t Pipe.Reader.t Deferred.Or_error.t) reader
 
-val of_writer
-  :  Writer.t
-  -> ?strict:bool
-  -> header
-  -> string list Pipe.Writer.t Or_error.t
+val of_writer : Writer.t -> ?strict:bool -> header -> string list Pipe.Writer.t Or_error.t
 
 val create_writer
   :  string

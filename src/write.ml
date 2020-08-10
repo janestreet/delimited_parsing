@@ -57,9 +57,7 @@ module Expert = struct
       base ?sep ?line_breaks (Raw.of_writer_and_close writer)
     ;;
 
-    let of_writer ?sep ?line_breaks writer =
-      base ?sep ?line_breaks (Raw.of_writer writer)
-    ;;
+    let of_writer ?sep ?line_breaks writer = base ?sep ?line_breaks (Raw.of_writer writer)
 
     let create_writer ?sep ?line_breaks filename =
       base ?sep ?line_breaks (Raw.create_writer filename)

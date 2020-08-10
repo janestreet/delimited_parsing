@@ -98,8 +98,7 @@ let bind_without_unnecessary_yielding x ~f =
   | None -> Deferred.bind x ~f
 ;;
 
-let fold_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~init ~f r
-  =
+let fold_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~init ~f r =
   fold_reader'
     ?strip
     ?skip_lines
@@ -167,8 +166,7 @@ let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builde
   r
 ;;
 
-let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder filename
-  =
+let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder filename =
   Reader.open_file filename
   >>| pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
 ;;

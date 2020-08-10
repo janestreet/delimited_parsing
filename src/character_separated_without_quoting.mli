@@ -16,6 +16,4 @@ val of_reader
 (** [create_reader ?strip ?skip_lines ~header filename] same as of_reader, but creates
     the reader for you *)
 val create_reader
-  : ( Header.t
-    , ?quote:char -> sep:char -> string -> Row.t Pipe.Reader.t Deferred.t )
-      reader
+  : (Header.t, ?quote:char -> sep:char -> string -> Row.t Pipe.Reader.t Deferred.t) reader
