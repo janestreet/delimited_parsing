@@ -91,6 +91,8 @@ end
 
 let protect ~f pipe =
   Monitor.protect
+    ~run:`Schedule
+    ~rest:`Log
     (fun () -> f pipe)
     ~finally:(fun () ->
       Pipe.close pipe;
