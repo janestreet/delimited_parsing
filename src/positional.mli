@@ -3,6 +3,7 @@ open Async
 open Shared
 module Row = Delimited_kernel.Read.Row
 
+
 (** All readers defined below will raise if they encounter unparsable content. *)
 
 (** Specify the name, and 0-based starting position and length of each column.
@@ -10,6 +11,7 @@ module Row = Delimited_kernel.Read.Row
     characters wide would be ("foo", 0, 8).
     Column ranges must not overlap. *)
 type header = (string * int * int) list
+
 
 (** All following funtions return Error if column ranges overlap. *)
 
