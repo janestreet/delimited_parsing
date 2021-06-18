@@ -1,5 +1,5 @@
 open! Core
-open! Async
+open Async
 
 (** Kitchen-sink module for functions shared by multiple parsers. *)
 

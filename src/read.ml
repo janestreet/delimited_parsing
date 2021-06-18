@@ -2,7 +2,6 @@ open Core
 open Async
 include Delimited_kernel.Read
 open Deferred.Let_syntax
-open! Int.Replace_polymorphic_compare
 
 (* the maximum read/write I managed to get off of a socket or disk was 65k *)
 let buffer_size = 10 * 65 * 1024
@@ -260,7 +259,13 @@ let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
   >>| pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
 ;;
 
-let rec do_line_skip ~skip_lines ~skipped_so_far ~stream ~input_pipe =
+let rec do_line_skip
+          ~newlines_between_reads
+          ~skip_lines
+          ~skipped_so_far
+          ~stream
+          ~input_pipe
+  =
   if skipped_so_far >= skip_lines
   then return stream
   else (
@@ -274,7 +279,14 @@ let rec do_line_skip ~skip_lines ~skipped_so_far ~stream ~input_pipe =
     | `Ok input ->
       let rec skip_lines_in_chunk ~pos ~skipped_so_far =
         match String.index_from input pos '\n' with
-        | None -> do_line_skip ~skip_lines ~skipped_so_far ~stream ~input_pipe
+        | None ->
+          let skipped_so_far = skipped_so_far + if newlines_between_reads then 1 else 0 in
+          do_line_skip
+            ~newlines_between_reads
+            ~skip_lines
+            ~skipped_so_far
+            ~stream
+            ~input_pipe
         | Some end_pos ->
           let skipped_so_far = skipped_so_far + 1 in
           if skipped_so_far >= skip_lines
@@ -319,7 +331,12 @@ let parse_pipe
           Pipe.write writer row)
     in
     let%bind init =
-      do_line_skip ~skip_lines ~skipped_so_far:0 ~stream:init ~input_pipe
+      do_line_skip
+        ~newlines_between_reads
+        ~skip_lines
+        ~skipped_so_far:0
+        ~stream:init
+        ~input_pipe
     in
     let%bind stream =
       Pipe.fold input_pipe ~init ~f:(fun stream input ->

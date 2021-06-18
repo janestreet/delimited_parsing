@@ -1,5 +1,5 @@
 open! Core
-open! Async
+open Async
 open Shared
 module Row = Delimited_kernel.Read.Row
 module Header = Delimited_kernel.Read.Header
