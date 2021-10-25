@@ -110,6 +110,11 @@ module By_row = struct
   let with_file ?sep ?line_breaks filename ~f =
     Writer.with_file filename ~f:(fun writer -> with_writer ?sep ?line_breaks writer ~f)
   ;;
+
+  let with_file_atomic ?temp_file ?fsync ?sep ?line_breaks filename ~f =
+    Writer.with_file_atomic ?temp_file ?fsync filename ~f:(fun writer ->
+      with_writer ?sep ?line_breaks writer ~f)
+  ;;
 end
 
 let with_writer ?sep ?line_breaks ~write_header builder writer ~f =

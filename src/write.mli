@@ -53,6 +53,16 @@ module By_row : sig
     -> string
     -> f:(string list Pipe.Writer.t -> 'a Deferred.t)
     -> 'a Deferred.t
+
+  (** Same as [with_file], but uses [Writer.with_file_atomic] under the hood *)
+  val with_file_atomic
+    :  ?temp_file:string
+    -> ?fsync:bool
+    -> ?sep:char
+    -> ?line_breaks:[ `Unix | `Windows ] (** default is [`Windows] *)
+    -> string
+    -> f:(string list Pipe.Writer.t -> 'a Deferred.t)
+    -> 'a Deferred.t
 end
 
 (** Here be dragons. You may wish to use these functions over the bracketed
