@@ -13,7 +13,6 @@ let of_reader
       ~sep
       reader
   =
-  let module Table = String.Table in
   assert (Char.O.(quote <> sep));
   let lineno = ref 1 in
   let pipe_r, pipe_w = Pipe.create () in
