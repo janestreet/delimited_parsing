@@ -255,8 +255,22 @@ let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builde
 ;;
 
 let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder filename =
-  Reader.open_file filename
-  >>| pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
+  let%bind reader = Reader.open_file filename in
+  Monitor.handle_errors
+    (fun () ->
+       return
+         (pipe_of_reader
+            ?strip
+            ?skip_lines
+            ?sep
+            ?quote
+            ?header
+            ?on_invalid_row
+            builder
+            reader))
+    (fun exn ->
+       don't_wait_for (Reader.close reader);
+       raise (Monitor.extract_exn exn))
 ;;
 
 let rec do_line_skip
