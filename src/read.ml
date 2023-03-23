@@ -223,8 +223,7 @@ let fold_reader_without_pushbacki
     r
     ~f:(fun acc queue ->
       return
-        (Queue.fold queue ~init:acc ~f:(fun acc (line_number, elt) ->
-           f line_number acc elt)))
+        (Queue.fold queue ~init:acc ~f:(fun acc (line_number, elt) -> f line_number acc elt)))
 ;;
 
 let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder reader =
@@ -356,9 +355,7 @@ let parse_pipe
       Pipe.fold input_pipe ~init ~f:(fun stream input ->
         let stream = Streaming.input_string stream input in
         let stream =
-          if newlines_between_reads
-          then Streaming.input_string stream "\n"
-          else stream
+          if newlines_between_reads then Streaming.input_string stream "\n" else stream
         in
         let%map () = Streaming.acc stream in
         stream)
