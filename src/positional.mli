@@ -13,7 +13,7 @@ module Row = Delimited_kernel.Read.Row
 type header = (string * int * int) list
 
 
-(** All following funtions return Error if column ranges overlap. *)
+(** All following functions return Error if column ranges overlap. *)
 
 (** [of_reader ?quote ?strip ?skip_lines ~sep ~header r] returns a row pipe based on data
     read from the provided reader.  [sep] is used as the separator between fields, and is
