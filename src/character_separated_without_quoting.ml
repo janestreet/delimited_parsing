@@ -5,13 +5,13 @@ module Row = Delimited_kernel.Read.Row
 module Header = Delimited_kernel.Read.Header
 
 let of_reader
-      ?(strip = false)
-      ?(skip_lines = 0)
-      ?(on_parse_error = `Raise)
-      ~header
-      ?(quote = '\\')
-      ~sep
-      reader
+  ?(strip = false)
+  ?(skip_lines = 0)
+  ?(on_parse_error = `Raise)
+  ~header
+  ?(quote = '\\')
+  ~sep
+  reader
   =
   assert (Char.O.(quote <> sep));
   let lineno = ref 1 in

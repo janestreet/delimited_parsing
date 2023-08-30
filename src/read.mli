@@ -3,7 +3,7 @@ open Async
 
 include
   module type of Delimited_kernel.Read
-  with module Streaming := Delimited_kernel.Read.Streaming
+    with module Streaming := Delimited_kernel.Read.Streaming
 (** @open *)
 
 module Streaming : sig

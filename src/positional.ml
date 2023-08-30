@@ -38,12 +38,12 @@ let process_header header ~strict =
 ;;
 
 let of_reader
-      ?(strip = false)
-      ?(skip_lines = 0)
-      ?(on_parse_error = `Raise)
-      ~header
-      ?(strict = true)
-      reader
+  ?(strip = false)
+  ?(skip_lines = 0)
+  ?(on_parse_error = `Raise)
+  ~header
+  ?(strict = true)
+  reader
   =
   match process_header header ~strict with
   | Error e -> Error e

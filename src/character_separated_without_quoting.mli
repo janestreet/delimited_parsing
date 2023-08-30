@@ -6,7 +6,6 @@ module Header = Delimited_kernel.Read.Header
 
 (** All readers defined below will raise if they encounter unparsable content. *)
 
-
 (** [of_reader ?quote ?strip ?skip_lines ~sep ~header r] returns a row pipe based on data
     read from the provided reader.  [sep] is used as the separator between fields, and is
     assumed to be escaped with \ unless [quote] is given.  *)

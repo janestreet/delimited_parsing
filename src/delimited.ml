@@ -32,6 +32,5 @@ module Non_csv = struct
   module Positional = Positional
 end
 
-
 (** {1} Modules shared between multiple parsers. *)
 module Shared = Shared

@@ -20,16 +20,16 @@ module Streaming = struct
   ;;
 
   let read_file
-        ?strip
-        ?sep
-        ?quote
-        ?start_line_number
-        ?on_invalid_row
-        ?header
-        builder
-        ~init
-        ~f
-        ~filename
+    ?strip
+    ?sep
+    ?quote
+    ?start_line_number
+    ?on_invalid_row
+    ?header
+    builder
+    ~init
+    ~f
+    ~filename
     =
     let t =
       create
@@ -50,17 +50,17 @@ module Streaming = struct
 end
 
 let fold_reader_internal
-      ?strip
-      ?(skip_lines = 0)
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      ~init
-      ~f
-      ~what_to_enqueue
-      r
+  ?strip
+  ?(skip_lines = 0)
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  ~init
+  ~f
+  ~what_to_enqueue
+  r
   =
   let%bind () = Shared.drop_lines r skip_lines in
   let buffer = Bytes.create buffer_size in
@@ -76,7 +76,7 @@ let fold_reader_internal
       builder
       ~init:()
       ~f:(fun line_number () elt ->
-        Queue.enqueue queue (what_to_enqueue elt ~line_number))
+      Queue.enqueue queue (what_to_enqueue elt ~line_number))
   in
   Deferred.repeat_until_finished (state, init) (fun (state, acc) ->
     match%bind Reader.read r buffer ~len:buffer_size with
@@ -94,16 +94,16 @@ let fold_reader_internal
 ;;
 
 let fold_readeri'
-      ?strip
-      ?skip_lines
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      ~init
-      ~f
-      r
+  ?strip
+  ?skip_lines
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  ~init
+  ~f
+  r
   =
   fold_reader_internal
     ?strip
@@ -175,16 +175,16 @@ let fold_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder ~
 ;;
 
 let fold_reader_without_pushback
-      ?strip
-      ?skip_lines
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      ~init
-      ~f
-      r
+  ?strip
+  ?skip_lines
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  ~init
+  ~f
+  r
   =
   fold_reader'
     ?strip
@@ -200,16 +200,16 @@ let fold_reader_without_pushback
 ;;
 
 let fold_reader_without_pushbacki
-      ?strip
-      ?skip_lines
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      ~init
-      ~f
-      r
+  ?strip
+  ?skip_lines
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  ~init
+  ~f
+  r
   =
   fold_readeri'
     ?strip
@@ -222,8 +222,8 @@ let fold_reader_without_pushbacki
     ~init
     r
     ~f:(fun acc queue ->
-      return
-        (Queue.fold queue ~init:acc ~f:(fun acc (line_number, elt) -> f line_number acc elt)))
+    return
+      (Queue.fold queue ~init:acc ~f:(fun acc (line_number, elt) -> f line_number acc elt)))
 ;;
 
 let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder reader =
@@ -241,11 +241,11 @@ let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builde
         ~init:()
         reader
         ~f:(fun () queue ->
-          if Pipe.is_closed w
-          then (
-            let%bind () = Reader.close reader in
-            Deferred.never ())
-          else Pipe.transfer_in w ~from:queue)
+        if Pipe.is_closed w
+        then (
+          let%bind () = Reader.close reader in
+          Deferred.never ())
+        else Pipe.transfer_in w ~from:queue)
     in
     return (Pipe.close w)
   in
@@ -257,27 +257,27 @@ let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
   let%bind reader = Reader.open_file filename in
   Monitor.handle_errors
     (fun () ->
-       return
-         (pipe_of_reader
-            ?strip
-            ?skip_lines
-            ?sep
-            ?quote
-            ?header
-            ?on_invalid_row
-            builder
-            reader))
+      return
+        (pipe_of_reader
+           ?strip
+           ?skip_lines
+           ?sep
+           ?quote
+           ?header
+           ?on_invalid_row
+           builder
+           reader))
     (fun exn ->
-       don't_wait_for (Reader.close reader);
-       raise (Monitor.extract_exn exn))
+      don't_wait_for (Reader.close reader);
+      raise (Monitor.extract_exn exn))
 ;;
 
 let rec do_line_skip
-          ~newlines_between_reads
-          ~skip_lines
-          ~skipped_so_far
-          ~stream
-          ~input_pipe
+  ~newlines_between_reads
+  ~skip_lines
+  ~skipped_so_far
+  ~stream
+  ~input_pipe
   =
   if skipped_so_far >= skip_lines
   then return stream
@@ -312,16 +312,16 @@ let rec do_line_skip
 ;;
 
 let parse_pipe
-      ~newlines_between_reads
-      ?strip
-      ?(start_line_number = 1)
-      ?(skip_lines = 0)
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      input_pipe
+  ~newlines_between_reads
+  ?strip
+  ?(start_line_number = 1)
+  ?(skip_lines = 0)
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  input_pipe
   =
   Pipe.create_reader ~close_on_exception:false (fun writer ->
     let init =
@@ -339,9 +339,9 @@ let parse_pipe
            [Pipe.fold] below does). *)
         ~init:(return ())
         ~f:(fun _ row ->
-          (* Waiting for the accumulator is not necessary, since [Pipe.write] should not
+        (* Waiting for the accumulator is not necessary, since [Pipe.write] should not
              become determined until all previous writes have become determined anyway. *)
-          Pipe.write writer row)
+        Pipe.write writer row)
     in
     let%bind init =
       do_line_skip
@@ -370,15 +370,15 @@ let parse_pipe
 ;;
 
 let pipe_of_chunks
-      ?strip
-      ?start_line_number
-      ?skip_lines
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      input_pipe
+  ?strip
+  ?start_line_number
+  ?skip_lines
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  input_pipe
   =
   parse_pipe
     ~newlines_between_reads:false
@@ -394,15 +394,15 @@ let pipe_of_chunks
 ;;
 
 let pipe_of_lines
-      ?strip
-      ?start_line_number
-      ?skip_lines
-      ?sep
-      ?quote
-      ?header
-      ?on_invalid_row
-      builder
-      input_pipe
+  ?strip
+  ?start_line_number
+  ?skip_lines
+  ?sep
+  ?quote
+  ?header
+  ?on_invalid_row
+  builder
+  input_pipe
   =
   parse_pipe
     ~newlines_between_reads:true
