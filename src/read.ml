@@ -272,6 +272,11 @@ let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
       raise (Monitor.extract_exn exn))
 ;;
 
+let load_lines ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder filename =
+  create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder filename
+  >>= Pipe.to_list
+;;
+
 let rec do_line_skip
   ~newlines_between_reads
   ~skip_lines

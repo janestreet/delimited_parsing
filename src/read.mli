@@ -199,7 +199,7 @@ val pipe_of_lines
   -> string Pipe.Reader.t
   -> 'a Pipe.Reader.t
 
-(** [create_reader filename] opens a reader for the given filename & returns a pipe of its parsed values. *)
+(** [create_reader t filename] opens a reader for the given filename & returns a pipe of its parsed values. *)
 val create_reader
   :  ?strip:bool
   -> ?skip_lines:int
@@ -210,3 +210,15 @@ val create_reader
   -> 'a t
   -> string
   -> 'a Pipe.Reader.t Deferred.t
+
+(** [load_lines t filename] opens a reader for the given filename & returns a list of its parsed values. *)
+val load_lines
+  :  ?strip:bool
+  -> ?skip_lines:int
+  -> ?sep:char
+  -> ?quote:[ `No_quoting | `Using of char ]
+  -> ?header:Header.t
+  -> ?on_invalid_row:'a On_invalid_row.t
+  -> 'a t
+  -> string
+  -> 'a list Deferred.t
