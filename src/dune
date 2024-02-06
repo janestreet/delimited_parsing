@@ -1,3 +1,6 @@
-(library (name delimited) (public_name delimited_parsing)
+(library
+ (name delimited)
+ (public_name delimited_parsing)
  (libraries async core core_extended.delimited_kernel)
- (preprocess (pps ppx_jane)))
+ (preprocess
+  (pps ppx_jane)))
