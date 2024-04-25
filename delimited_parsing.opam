@@ -15,7 +15,7 @@ depends: [
   "core"
   "core_extended"
   "ppx_jane"
-  "dune"          {>= "2.0.0"}
+  "dune"          {>= "3.11.0"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "Parsing of character (e.g., comma) separated and fixed-width values"
