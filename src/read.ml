@@ -76,7 +76,7 @@ let fold_reader_internal
       builder
       ~init:()
       ~f:(fun line_number () elt ->
-      Queue.enqueue queue (what_to_enqueue elt ~line_number))
+        Queue.enqueue queue (what_to_enqueue elt ~line_number))
   in
   Deferred.repeat_until_finished (state, init) (fun (state, acc) ->
     match%bind Reader.read r buffer ~len:buffer_size with
@@ -222,8 +222,9 @@ let fold_reader_without_pushbacki
     ~init
     r
     ~f:(fun acc queue ->
-    return
-      (Queue.fold queue ~init:acc ~f:(fun acc (line_number, elt) -> f line_number acc elt)))
+      return
+        (Queue.fold queue ~init:acc ~f:(fun acc (line_number, elt) ->
+           f line_number acc elt)))
 ;;
 
 let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder reader =
@@ -241,11 +242,11 @@ let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builde
         ~init:()
         reader
         ~f:(fun () queue ->
-        if Pipe.is_closed w
-        then (
-          let%bind () = Reader.close reader in
-          Deferred.never ())
-        else Pipe.transfer_in w ~from:queue)
+          if Pipe.is_closed w
+          then (
+            let%bind () = Reader.close reader in
+            Deferred.never ())
+          else Pipe.transfer_in w ~from:queue)
     in
     return (Pipe.close w)
   in
@@ -344,9 +345,9 @@ let parse_pipe
            [Pipe.fold] below does). *)
         ~init:(return ())
         ~f:(fun _ row ->
-        (* Waiting for the accumulator is not necessary, since [Pipe.write] should not
+          (* Waiting for the accumulator is not necessary, since [Pipe.write] should not
              become determined until all previous writes have become determined anyway. *)
-        Pipe.write writer row)
+          Pipe.write writer row)
     in
     let%bind init =
       do_line_skip
