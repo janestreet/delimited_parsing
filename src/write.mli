@@ -28,6 +28,18 @@ val with_file
   -> f:('a Pipe.Writer.t -> 'b Deferred.t)
   -> 'b Deferred.t
 
+(** Same as [with_file], but uses [Writer.with_file_atomic] under the hood *)
+val with_file_atomic
+  :  ?temp_file:string
+  -> ?fsync:bool
+  -> ?sep:char
+  -> ?line_breaks:[ `Unix | `Windows ] (** default is [`Windows] *)
+  -> write_header:bool
+  -> 'a t
+  -> string
+  -> f:('a Pipe.Writer.t -> 'b Deferred.t)
+  -> 'b Deferred.t
+
 module By_row : sig
   include module type of Delimited_kernel.Write.By_row (** @inline *)
 
