@@ -256,6 +256,11 @@ let pipe_of_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builde
 
 let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder filename =
   let%bind reader = Reader.open_file filename in
+  let on_invalid_row =
+    match on_invalid_row with
+    | None -> On_invalid_row.raise_with_filename ~filename
+    | Some on_invalid_row -> on_invalid_row
+  in
   Monitor.handle_errors
     (fun () ->
       return
@@ -265,7 +270,7 @@ let create_reader ?strip ?skip_lines ?sep ?quote ?header ?on_invalid_row builder
            ?sep
            ?quote
            ?header
-           ?on_invalid_row
+           ~on_invalid_row
            builder
            reader))
     (fun exn ->

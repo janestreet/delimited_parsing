@@ -9,7 +9,7 @@ include
 module Streaming : sig
   include module type of Delimited_kernel.Read.Streaming (** @open *)
 
-  (** [input_reader t reader] feeds all bytes from [reader] to the delimited parser.  It
+  (** [input_reader t reader] feeds all bytes from [reader] to the delimited parser. It
       does not call [finish] after reaching [EOF], one need to call it explicitly if
       needed. *)
   val input_reader : 'a t -> Reader.t -> 'a t Deferred.t
@@ -37,22 +37,19 @@ end
     If [strip] is true, leading and trailing whitespace is stripped from each field.
     Default value is false.
 
-    If [skip_lines] > 0, that many lines are skipped at the start of the input.
-    Note that this skips lines without doing any CSV parsing of the lines being skipped,
-    so newlines within a quoted field are treated identically to newlines outside a
-    quoted field. An exception will be raised if the input has fewer than [skip_lines]
-    lines.
-    Default value is 0.
+    If [skip_lines] > 0, that many lines are skipped at the start of the input. Note that
+    this skips lines without doing any CSV parsing of the lines being skipped, so newlines
+    within a quoted field are treated identically to newlines outside a quoted field. An
+    exception will be raised if the input has fewer than [skip_lines] lines. Default value
+    is 0.
 
-    [sep] is the character that separates fields within a row.
-    Default value is ','
+    [sep] is the character that separates fields within a row. Default value is ','
 
-    [quote] defines a character to use for quoting. [ `Using '"' ] implements
-    the MS Excel convention: either a field is unquoted, or it has leading and
-    trailing quotes and internal escaped characters are represented as
-    quote-char char, e.g., {i "\n} to escape a newline. [`No_quoting] means all
-    characters are literal. The default is [`Using '"']
-*)
+    [quote] defines a character to use for quoting. [ `Using '"' ] implements the MS Excel
+    convention: either a field is unquoted, or it has leading and trailing quotes and
+    internal escaped characters are represented as quote-char char, e.g., {i "\n} to
+    escape a newline. [`No_quoting] means all characters are literal. The default is
+    [`Using '"'] *)
 val fold_reader
   :  ?strip:bool
   -> ?skip_lines:int
@@ -67,8 +64,7 @@ val fold_reader
   -> 'b Deferred.t
 
 (** Same as [fold_reader], except that it also passes the line number of the current row
-    to [f].
-*)
+    to [f]. *)
 val fold_readeri
   :  ?strip:bool
   -> ?skip_lines:int
@@ -83,9 +79,8 @@ val fold_readeri
   -> 'b Deferred.t
 
 (** [fold_reader' ?strip ?skip_lines ?sep ?quote ~init ~f r] works similarly to
-    [fold_reader], except for the [f] argument. [fold_reader'] runs [f] on batches
-    of [Row.t]s rather than running [f] on each individual row.
-*)
+    [fold_reader], except for the [f] argument. [fold_reader'] runs [f] on batches of
+    [Row.t]s rather than running [f] on each individual row. *)
 val fold_reader'
   :  ?strip:bool
   -> ?skip_lines:int
@@ -99,7 +94,8 @@ val fold_reader'
   -> Reader.t
   -> 'b Deferred.t
 
-(** Same as [fold_reader'], except that each element in a batch of [Row.t]'s is a tuple of line number and row. *)
+(** Same as [fold_reader'], except that each element in a batch of [Row.t]'s is a tuple of
+    line number and row. *)
 val fold_readeri'
   :  ?strip:bool
   -> ?skip_lines:int
@@ -199,7 +195,8 @@ val pipe_of_lines
   -> string Pipe.Reader.t
   -> 'a Pipe.Reader.t
 
-(** [create_reader t filename] opens a reader for the given filename & returns a pipe of its parsed values. *)
+(** [create_reader t filename] opens a reader for the given filename & returns a pipe of
+    its parsed values. *)
 val create_reader
   :  ?strip:bool
   -> ?skip_lines:int
@@ -211,7 +208,8 @@ val create_reader
   -> string
   -> 'a Pipe.Reader.t Deferred.t
 
-(** [load_lines t filename] opens a reader for the given filename & returns a list of its parsed values. *)
+(** [load_lines t filename] opens a reader for the given filename & returns a list of its
+    parsed values. *)
 val load_lines
   :  ?strip:bool
   -> ?skip_lines:int
