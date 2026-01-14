@@ -32,8 +32,7 @@ let of_reader
       prev_was_cr := false)
   in
   let add_char c =
-    (* delay adding '\r' characters until we know that the next character is
-       not '\n' *)
+    (* delay adding '\r' characters until we know that the next character is not '\n' *)
     emit_pending_cr ();
     if Char.equal c '\r' then prev_was_cr := true else Buffer.add_char field c
   in
