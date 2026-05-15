@@ -19,17 +19,6 @@ module Write = struct
   module Without_expert : module type of Write with module Expert := Write.Expert = Write
 end
 
-(** Parsers for non-CSV-like formats *)
-module Non_csv = struct
-  (** [Character_separated_without_quoting] parses fields separated by a character, where
-      fields may contain escaped characters (e,g, [\n]) but fields may not be quoted
-      (e.g., ["foo bar"]). *)
-  module Character_separated_without_quoting = Character_separated_without_quoting
-
-  (** [Positional] parses fixed-width fields. *)
-  module Positional = Positional
-end
-
 (** {1}
     Modules shared between multiple parsers. *)
 module Shared = Shared
